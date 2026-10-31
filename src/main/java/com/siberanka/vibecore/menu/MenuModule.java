@@ -1,5 +1,7 @@
 package com.siberanka.vibecore.menu;
 
+import com.destroystokyo.paper.profile.PlayerProfile;
+import com.destroystokyo.paper.profile.ProfileProperty;
 import com.siberanka.vibecore.core.io.AtomicFiles;
 import com.siberanka.vibecore.core.module.ModuleId;
 import com.siberanka.vibecore.core.module.VibeModule;
@@ -45,6 +47,7 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -57,6 +60,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -339,10 +343,33 @@ public final class MenuModule implements VibeModule, Listener {
             if (Boolean.TRUE.equals(look.glow())) {
                 meta.setEnchantmentGlintOverride(true);
             }
+            if (look.model() != null) {
+                meta.setItemModel(NamespacedKey.fromString(look.model()));
+            }
+            if (look.customModelData() != null) {
+                meta.setCustomModelData(look.customModelData());
+            }
+            if (look.head() != null && meta instanceof SkullMeta skull) {
+                skull.setPlayerProfile(profile(look.head(), viewer));
+            }
             meta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP, ItemFlag.HIDE_ENCHANTS);
             stack.setItemMeta(meta);
         }
         return stack;
+    }
+
+    private static PlayerProfile profile(String head, Player viewer) {
+        if (head.equals(HeadSpec.VIEWER)) {
+            return viewer.getPlayerProfile();
+        }
+        UUID id = HeadSpec.uuid(head);
+        if (id != null) {
+            return viewer.getServer().createProfile(id);
+        }
+        PlayerProfile profile = viewer.getServer().createProfile(
+                UUID.nameUUIDFromBytes(head.getBytes(StandardCharsets.UTF_8)), "VibeCore");
+        profile.setProperty(new ProfileProperty("textures", head));
+        return profile;
     }
 
     private static Component plain(Component component) {

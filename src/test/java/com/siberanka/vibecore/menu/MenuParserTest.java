@@ -116,6 +116,33 @@ class MenuParserTest {
     }
 
     @Test
+    void customLooksAreValidated() {
+        String skin = java.util.Base64.getEncoder().encodeToString(
+                "{\"textures\":{\"SKIN\":{\"url\":\"http://textures.minecraft.net/texture/0123456789abcdef0123456789abcdef\"}}}"
+                        .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        String foreign = java.util.Base64.getEncoder().encodeToString(
+                "{\"textures\":{\"SKIN\":{\"url\":\"http://evil.example/texture/0123456789abcdef0123456789abcdef\"}}}"
+                        .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        Map<String, Object> document = shop();
+        document.put("items", Map.of(
+                "coin", Map.of("slot", 0, "material", "diamond", "model", "vibecore:coin", "custom-model-data", 7),
+                "me", Map.of("slot", 1, "material", "player_head", "head", "viewer"),
+                "skin", Map.of("slot", 2, "material", "player_head", "head", skin)));
+        MenuDefinition menu = MenuParser.parse(SHOP, document, Set.of("diamond", "player_head")::contains).orThrow();
+        assertEquals("vibecore:coin", menu.bySlot().get(0).base().model());
+        assertEquals(7, menu.bySlot().get(0).base().customModelData());
+
+        document.put("items", Map.of(
+                "a", Map.of("slot", 0, "material", "diamond", "model", "Not A Key", "custom-model-data", -1),
+                "b", Map.of("slot", 1, "material", "player_head", "head", foreign),
+                "c", Map.of("slot", 2, "material", "diamond", "head", "viewer"),
+                "d", Map.of("slot", 3, "material", "player_head", "head", "Notch")));
+        List<String> paths = paths(MenuParser.parse(SHOP, document, Set.of("diamond", "player_head")::contains));
+        assertTrue(paths.containsAll(List.of("items.a.model", "items.a.custom-model-data", "items.b.head",
+                "items.c.head", "items.d.head")), paths.toString());
+    }
+
+    @Test
     void futureSchemaIsRejected() {
         Map<String, Object> document = shop();
         document.put("schema-version", 2);

@@ -57,8 +57,10 @@ public final class MenuParser {
     private static final Set<String> ROOT_KEYS = Set.of(MigrationChain.VERSION_KEY, "title", "rows", "permission",
             "open-condition", "on-open", "on-close", "items");
     private static final Set<String> ITEM_KEYS = Set.of("slot", "slots", "material", "amount", "name", "lore", "glow",
-            "visible", "states", "actions");
-    private static final Set<String> STATE_KEYS = Set.of("when", "material", "amount", "name", "lore", "glow");
+            "model", "custom-model-data", "head", "visible", "states", "actions");
+    private static final Set<String> STATE_KEYS = Set.of("when", "material", "amount", "name", "lore", "glow",
+            "model", "custom-model-data", "head");
+    private static final Pattern MODEL = Pattern.compile("[a-z0-9_.-]{1,64}:[a-z0-9_./-]{1,128}");
 
     private final Predicate<String> materialExists;
     private final List<Problem> problems = new ArrayList<>();
@@ -250,10 +252,34 @@ public final class MenuParser {
         } else if (base) {
             glow = false;
         }
+        String model = null;
+        if (section.get("model") != null) {
+            if (section.get("model") instanceof String key && MODEL.matcher(key).matches()) {
+                model = key;
+            } else {
+                problems.add(new Problem(path + ".model", "format", "expected an item model key such as vibecore:coin"));
+            }
+        }
+        Integer customModelData = null;
+        if (section.get("custom-model-data") != null) {
+            if (section.get("custom-model-data") instanceof Integer value && value >= 0) {
+                customModelData = value;
+            } else {
+                problems.add(new Problem(path + ".custom-model-data", "range", "expected a whole number of 0 or more"));
+            }
+        }
+        String head = null;
+        if (section.get("head") != null) {
+            head = HeadSpec.validate(path + ".head", section.get("head"), problems);
+            if (head != null && material != null && !material.equals("player_head")) {
+                problems.add(new Problem(path + ".head", "material", "heads need material player_head"));
+            }
+        }
         if (problems.size() != before) {
             return null;
         }
-        return new ItemLook(material, amount, name, base && lore == null ? List.of() : lore, glow);
+        return new ItemLook(material, amount, name, base && lore == null ? List.of() : lore, glow,
+                model, customModelData, head);
     }
 
     private String text(String path, Object raw) {

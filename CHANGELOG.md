@@ -13,6 +13,7 @@
 - Shared model foundations: namespaced identifiers, project headers, schema migration chain, typed and scoped variables, and a persistent glyph and model data identity registry.
 - Variable store with per-player isolation, scope-aware lifecycle clearing, bounded per-player values and lossless persistence of persistent scopes.
 - Condition and action engine: typed comparisons and boolean logic, variable actions, branches and fail gates, all-or-nothing commit of variable changes, step and nesting budgets, and a bounded YAML parser.
+- Menu items accept an item model key, custom model data and player heads (the viewer, a UUID or a texture value restricted to the official skin host), and state overrides can change them.
 - Built-in player data in conditions (`{data: name}`) and text (`<data:name>`), and optional PlaceholderAPI text (`<papi:identifier>`), looked up at run time without a build dependency.
 - Command actions: `emit: {type: command, as: console|player, run: ...}` with an owner allow list in `actions.allowed-commands`, a fixed refusal of operator, stop and reload commands, typed `<player>`, `<uuid>` and number or boolean `<var:key>` placeholders, single-line templates without a leading slash, and an audit log line for console commands.
 - `cooldown` action: blocks a chain until a period has passed since the time stored in a number variable, with a message showing the remaining time; the variable's scope makes it per session, per player or global. Number variables accept bounds up to 1e15 and decimal bounds.
