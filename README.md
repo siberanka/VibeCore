@@ -26,7 +26,8 @@ VibeCore is a modular Paper plugin for server interfaces and visual content: inv
 | Cursor screens | Planned |
 | Text holograms: designs with timed slides, per-viewer text and visibility, placements | Implemented, unit tested; not yet run on a live server |
 | Hologram media, motion keyframes, Bedrock fallback | Planned |
-| Rank badges and pixel tools | Planned |
+| Rank badges: named pack glyphs with search and click-to-copy forms | Implemented, unit tested; not yet checked in a client |
+| Badge pixel studio, text rasterizing, Bedrock badge fonts | Planned |
 | Java resource pack: glyphs and item models built deterministically from `assets/` | Implemented, unit tested; not yet checked in a client |
 | Pack delivery: offer on join or by command, response tracking, keep-or-kick policy | Implemented; not yet checked in a client |
 | Built-in pack hosting, Bedrock pack | Planned |
@@ -65,6 +66,7 @@ The plugin JAR is written to `target/`.
 | `/vibecore hud show <hud>`, `hide`, `reset`, `who` | `vibecore.hud`; others need `vibecore.hud.others` | everyone / operators |
 | `/vibecore popup <popup> <player>`, `<popup> *` | `vibecore.popup`, `vibecore.popup.all` | operators |
 | `/vibecore hologram designs`, `list`, `nearest`, `place`, `move`, `tp`, `remove` | `vibecore.hologram` | operators |
+| `/vibecore badge list [search]`, `preview <badge>` | `vibecore.badge` | everyone |
 | `/vibecore pack status` | `vibecore.pack.status` | operators |
 | `/vibecore pack build` | `vibecore.pack.build` | operators |
 | `/vibecore pack send [player]`, `send *` | `vibecore.pack.send`, `vibecore.pack.send.all` | operators |
@@ -105,6 +107,10 @@ Enable the module with `modules.hologram: true`. Designs are YAML files in `holo
 - Every viewer gets a separate text display that only they can see, so `<player>`, variables and data show each viewer's own values, and nobody sees another viewer's text.
 - Displays are never saved with the world: they exist only near viewers in loaded chunks and are removed when the viewer leaves the range, quits, or the module stops or reloads.
 - Placements are stored in `data/holograms.txt` with ids `h1`, `h2`, … that are never reused. `/vibecore hologram list`, `nearest`, `move <id>`, `tp <id>` and `remove <id>` manage them.
+
+## Rank badges
+
+Enable the module with `modules.badge: true`. A badge in `badges/` names a glyph from `assets/pack.yml` with a display name and description. `/vibecore badge list [search]` finds badges by id or name (Turkish dotted and dotless i match either way) and `/vibecore badge preview <badge>` shows the badge with click-to-copy forms: the character, its `XXXX` escape, its code point and the `<glyph:id>` tag for chat, tab or name-tag plugins. A badge is only a picture: it never grants a permission or a group.
 
 ## Resource pack
 
@@ -163,7 +169,8 @@ VibeCore; envanter menüleri, imleçle kullanılan ekranlar, HUD ve açılır bi
 | İmleç ekranları | Planlandı |
 | Metin hologramları: süreli slaytlı tasarımlar, izleyiciye özel metin ve görünürlük, yerleşimler | Uygulandı, birim testleri var; henüz canlı sunucuda çalıştırılmadı |
 | Hologram medyası, hareket anahtar kareleri, Bedrock yedeği | Planlandı |
-| Rütbe rozetleri ve piksel araçları | Planlandı |
+| Rütbe rozetleri: aranabilir, kopyalanabilir biçimleriyle adlandırılmış paket glyph'leri | Uygulandı, birim testleri var; henüz istemcide denenmedi |
+| Rozet piksel stüdyosu, metin rasterleştirme, Bedrock rozet fontları | Planlandı |
 | Java kaynak paketi: `assets/` klasöründen deterministik üretilen glyph ve item modelleri | Uygulandı, birim testleri var; henüz istemcide denenmedi |
 | Paket dağıtımı: girişte veya komutla sunma, yanıt takibi, tut ya da at politikası | Uygulandı; henüz istemcide denenmedi |
 | Dahili paket barındırma, Bedrock paketi | Planlandı |
@@ -202,6 +209,10 @@ Sunucuda Paper 1.21.4 veya daha yeni bir sürüm ve Java 25 gerekir. Derlemek i�
 ### Hologramlar
 
 `modules.hologram: true` ile açılır. Tasarımlar `holograms/` klasöründeki YAML dosyalarıdır: süreli metin slaytları, billboard, görüş mesafesi, ölçek, gölge, arka plan ve isteğe bağlı izleyiciye özel `visible` koşulu. `/vibecore hologram place <tasarım>` ile yerleştirilir; bir tasarım birçok kez yerleştirilebilir ve tasarım değişince bütün yerleşimler güncellenir. Her izleyici yalnız kendisinin görebildiği ayrı bir metin görüntüsü alır, böylece kimse başkasının değerlerini görmez. Görüntüler dünyaya kaydedilmez; yalnız yüklü chunk'larda izleyicinin yakınında var olur. Yerleşimler `data/holograms.txt` dosyasında tekrar kullanılmayan `h1`, `h2`… kimlikleriyle tutulur.
+
+### Rütbe rozetleri
+
+`modules.badge: true` ile açılır. `badges/` klasöründeki bir rozet, `assets/pack.yml` içindeki bir glyph'i ad ve açıklamayla adlandırır. `/vibecore badge list [arama]` rozetleri kimlik veya ada göre bulur (Türkçe noktalı ve noktasız i iki yönde de eşleşir); `/vibecore badge preview <rozet>` karakteri, `XXXX` kaçışını, kod noktasını ve `<glyph:id>` etiketini tıklayıp kopyalanabilir biçimde gösterir. Rozet yalnız bir resimdir; hiçbir yetki veya grup vermez.
 
 ### Kaynak paketi
 

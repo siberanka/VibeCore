@@ -64,6 +64,9 @@ permissions:
   vibecore.hologram:
     description: Places, moves, removes and lists holograms.
     default: op
+  vibecore.badge:
+    description: Lists and previews rank badges. Badges never grant permissions.
+    default: true
   vibecore.admin:
     description: Grants the listed administration permissions only.
     default: op
@@ -85,3 +88,4 @@ permissions:
       vibecore.popup: true
       vibecore.popup.all: true
       vibecore.hologram: true
+      vibecore.badge: true

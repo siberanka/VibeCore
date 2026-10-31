@@ -19,6 +19,7 @@ help:
   hud: "Show, hide or reset a HUD"
   popup: "Send a popup to players"
   hologram: "Place and manage holograms"
+  badge: "List and preview rank badges"
 
 status:
   header: "<gray>Version <white><version></white> · configuration revision <white><revision></white></gray>"
@@ -112,3 +113,13 @@ hologram:
   removed: "<green>Removed placement <white><id></white>.</green>"
   unknown-design: "<red>Unknown design <white><design></white>.</red>"
   unknown-placement: "<red>Unknown placement <white><id></white>.</red>"
+
+badge:
+  disabled: "<red>The badge module is not enabled.</red>"
+  usage: "<gray>Usage: <white>/vibecore badge list [search]</white> or <white>preview [badge]</white></gray>"
+  list: "<gray>Badges: <white><count></white> (first 20 shown)</gray>"
+  entry: " <glyph> <white><id></white> <dark_gray>-</dark_gray> <name>"
+  preview: "<glyph> <white><id></white> <dark_gray>-</dark_gray> <name> <dark_gray>-</dark_gray> <description>"
+  copy: "<gray>Click to copy:</gray> <forms>"
+  unknown: "<red>Unknown badge <white><badge></white>.</red>"
+  not-built: "<yellow>This glyph is not in the built pack yet; run <white>/vibecore pack build</white>.</yellow>"

@@ -1,5 +1,6 @@
 package com.siberanka.vibecore;
 
+import com.siberanka.vibecore.badge.BadgeModule;
 import com.siberanka.vibecore.command.VibeCoreCommand;
 import com.siberanka.vibecore.core.config.ActiveState;
 import com.siberanka.vibecore.core.config.CoreSettings;
@@ -88,6 +89,7 @@ public final class VibeCorePlugin extends JavaPlugin {
         modules.register(new MenuModule(context, () -> state.get().settings().allowedCommands()));
         modules.register(new HudModule(context));
         modules.register(new HologramModule(context));
+        modules.register(new BadgeModule(context));
         modules.register(new PackModule(this, tasks, workers, glyphs, messages,
                 () -> state.get().settings().packDelivery()));
         modules.apply(state.get().settings().enabledModules());

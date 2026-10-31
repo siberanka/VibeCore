@@ -19,6 +19,7 @@ help:
   hud: "HUD gösterir, gizler veya sıfırlar"
   popup: "Oyunculara popup gönderir"
   hologram: "Hologram yerleştirir ve yönetir"
+  badge: "Rütbe rozetlerini listeler ve önizler"
 
 status:
   header: "<gray>Sürüm <white><version></white> · yapılandırma revizyonu <white><revision></white></gray>"
@@ -112,3 +113,13 @@ hologram:
   removed: "<green><white><id></white> yerleşimi kaldırıldı.</green>"
   unknown-design: "<red>Bilinmeyen tasarım: <white><design></white>.</red>"
   unknown-placement: "<red>Bilinmeyen yerleşim: <white><id></white>.</red>"
+
+badge:
+  disabled: "<red>Rozet modülü etkin değil.</red>"
+  usage: "<gray>Kullanım: <white>/vibecore badge list [arama]</white> veya <white>preview [rozet]</white></gray>"
+  list: "<gray>Rozetler: <white><count></white> (ilk 20 gösterilir)</gray>"
+  entry: " <glyph> <white><id></white> <dark_gray>-</dark_gray> <name>"
+  preview: "<glyph> <white><id></white> <dark_gray>-</dark_gray> <name> <dark_gray>-</dark_gray> <description>"
+  copy: "<gray>Kopyalamak için tıkla:</gray> <forms>"
+  unknown: "<red>Bilinmeyen rozet: <white><badge></white>.</red>"
+  not-built: "<yellow>Bu glyph henüz derlenmiş pakette yok; <white>/vibecore pack build</white> çalıştır.</yellow>"

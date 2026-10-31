@@ -23,6 +23,11 @@ public final class GlyphIndex {
         return glyphs.size();
     }
 
+    /** The code point of a built glyph. */
+    public Optional<Integer> codePoint(String id) {
+        return Optional.ofNullable(glyphs.get(id));
+    }
+
     public Optional<Component> component(String id) {
         Integer code = glyphs.get(id);
         return code == null ? Optional.empty()
