@@ -25,20 +25,19 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
- * Every menu and variable definition of the data folder, validated together:
- * a menu that refers to an unknown variable or opens an unknown menu rejects
- * the whole candidate.
+ * Every menu of the data folder, validated together and against the declared
+ * variables: a menu that refers to an unknown variable or opens an unknown menu
+ * rejects the whole candidate.
  *
  * <p>Menus live in {@code menus/}; the file {@code menus/shop/main.yml} becomes
  * {@code vibecore:shop/main}. Variables are declared in {@code variables.yml}.
  */
-public record MenuCatalog(Map<Identifier, MenuDefinition> menus, List<VariableDefinition> variables) {
+public record MenuCatalog(Map<Identifier, MenuDefinition> menus) {
 
     public static final int MAX_MENU_FILES = 256;
 
     public MenuCatalog {
         menus = Map.copyOf(menus);
-        variables = List.copyOf(variables);
     }
 
     public Optional<MenuDefinition> menu(Identifier id) {
@@ -46,9 +45,9 @@ public record MenuCatalog(Map<Identifier, MenuDefinition> menus, List<VariableDe
     }
 
     public static Result<MenuCatalog> load(Path dataFolder, Predicate<String> materialExists,
-                                           Set<String> allowedCommands) {
+                                           Set<String> allowedCommands,
+                                           Map<Identifier, VariableDefinition> variables) {
         List<Problem> problems = new ArrayList<>();
-        List<VariableDefinition> variables = loadVariables(dataFolder.resolve("variables.yml"), problems);
         TreeMap<Identifier, MenuDefinition> menus = new TreeMap<>();
         Path root = dataFolder.resolve("menus");
         if (Files.isDirectory(root, LinkOption.NOFOLLOW_LINKS)) {
@@ -75,15 +74,13 @@ public record MenuCatalog(Map<Identifier, MenuDefinition> menus, List<VariableDe
                 }
             }
         }
-        Map<Identifier, VariableDefinition> declared = new java.util.HashMap<>();
-        variables.forEach(variable -> declared.put(variable.key(), variable));
         for (MenuDefinition menu : menus.values()) {
-            checkReferences(menu, declared, menus.keySet(), materialExists, allowedCommands, problems);
+            checkReferences(menu, variables, menus.keySet(), materialExists, allowedCommands, problems);
         }
         if (!problems.isEmpty()) {
             return Result.rejected(problems);
         }
-        return Result.accepted(new MenuCatalog(menus, variables));
+        return Result.accepted(new MenuCatalog(menus));
     }
 
     private static List<Path> menuFiles(Path root, List<Problem> problems) {
@@ -100,44 +97,6 @@ public record MenuCatalog(Map<Identifier, MenuDefinition> menus, List<VariableDe
             problems.add(new Problem("menus", "unreadable", "menu folder could not be listed"));
             return List.of();
         }
-    }
-
-    private static List<VariableDefinition> loadVariables(Path file, List<Problem> problems) {
-        if (!Files.exists(file, LinkOption.NOFOLLOW_LINKS)) {
-            return List.of();
-        }
-        Map<String, Object> document = CoreStateLoader.readYaml(file, "variables.yml", problems);
-        if (document == null) {
-            return List.of();
-        }
-        Object raw = document.get("variables");
-        if (!(raw instanceof List<?> list) || document.size() != 1) {
-            problems.add(new Problem("variables.yml", "format", "expected a single 'variables' list"));
-            return List.of();
-        }
-        List<VariableDefinition> definitions = new ArrayList<>();
-        Set<Identifier> seen = new HashSet<>();
-        for (int index = 0; index < list.size(); index++) {
-            String path = "variables.yml: variables[" + index + "]";
-            if (!(list.get(index) instanceof Map<?, ?> section)) {
-                problems.add(new Problem(path, "type", "expected a variable section"));
-                continue;
-            }
-            Map<String, Object> copy = new java.util.LinkedHashMap<>();
-            section.forEach((key, value) -> copy.put(String.valueOf(key), value));
-            Result<VariableDefinition> definition = VariableDefinition.read(copy);
-            for (Problem problem : definition.problems()) {
-                problems.add(new Problem(path + "." + problem.path(), problem.code(), problem.detail()));
-            }
-            if (definition.isAccepted()) {
-                if (!seen.add(definition.orThrow().key())) {
-                    problems.add(new Problem(path, "duplicate", "variable declared twice"));
-                } else {
-                    definitions.add(definition.orThrow());
-                }
-            }
-        }
-        return definitions;
     }
 
     /** Identifiers and keys a menu refers to. */

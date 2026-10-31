@@ -14,10 +14,16 @@ import com.siberanka.vibecore.core.text.MessageCatalog;
 import com.siberanka.vibecore.core.text.Messages;
 import com.siberanka.vibecore.core.validation.Problem;
 import com.siberanka.vibecore.core.validation.Result;
+import com.siberanka.vibecore.integration.placeholder.PlaceholderApi;
 import com.siberanka.vibecore.menu.MenuModule;
 import com.siberanka.vibecore.pack.GlyphIndex;
 import com.siberanka.vibecore.pack.PackModule;
+import com.siberanka.vibecore.runtime.ModuleContext;
+import com.siberanka.vibecore.runtime.VariableService;
+import com.siberanka.vibecore.runtime.ViewerText;
 import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -41,6 +47,7 @@ public final class VibeCorePlugin extends JavaPlugin {
     private BoundedWorkers workers;
     private Diagnostics diagnostics;
     private Messages messages;
+    private VariableService variables;
 
     @Override
     public void onEnable() {
@@ -70,9 +77,12 @@ public final class VibeCorePlugin extends JavaPlugin {
         tasks = new TaskTracker(this);
         modules = new ModuleRegistry(getLogger());
         messages = new Messages(this::catalog, () -> state.get().settings().defaultLocale());
+        variables = new VariableService(this, tasks, workers);
+        startVariables();
         GlyphIndex glyphs = new GlyphIndex();
-        modules.register(new MenuModule(this, tasks, workers, messages,
-                () -> state.get().settings().allowedCommands(), glyphs));
+        ViewerText text = new ViewerText(variables, glyphs, new PlaceholderApi(getServer()));
+        ModuleContext context = new ModuleContext(this, tasks, workers, messages, variables, text, glyphs);
+        modules.register(new MenuModule(context, () -> state.get().settings().allowedCommands()));
         modules.register(new PackModule(this, tasks, workers, glyphs, messages,
                 () -> state.get().settings().packDelivery()));
         modules.apply(state.get().settings().enabledModules());
@@ -88,6 +98,9 @@ public final class VibeCorePlugin extends JavaPlugin {
     public void onDisable() {
         if (modules != null) {
             modules.stopAll();
+        }
+        if (variables != null) {
+            variables.stop();
         }
         if (tasks != null) {
             tasks.cancelAll();
@@ -147,16 +160,22 @@ public final class VibeCorePlugin extends JavaPlugin {
             return;
         }
         CoreSettings current = state.get().settings();
-        List<Problem> moduleProblems = List.of();
-        boolean retryFailed = modules.statuses().stream().anyMatch(status ->
-                status.state() == ModuleState.FAILED && current.enabledModules().contains(status.id()));
-        if (!current.enabledModules().equals(previous.enabledModules()) || retryFailed) {
+        List<Problem> moduleProblems = new ArrayList<>();
+        if (variables.running()) {
+            moduleProblems.addAll(variables.reload().problems());
+        } else {
+            moduleProblems.addAll(startVariables());
+        }
+        boolean retry = modules.statuses().stream().anyMatch(status ->
+                (status.state() == ModuleState.FAILED || status.state() == ModuleState.UNSUPPORTED)
+                        && current.enabledModules().contains(status.id()));
+        if (!current.enabledModules().equals(previous.enabledModules()) || retry) {
             modules.apply(current.enabledModules());
         } else {
-            moduleProblems = modules.reloadRunning();
-            if (!moduleProblems.isEmpty()) {
-                logProblems("Module files rejected; previous module state stays active", moduleProblems);
-            }
+            moduleProblems.addAll(modules.reloadRunning());
+        }
+        if (!moduleProblems.isEmpty()) {
+            logProblems("Some files were rejected; their previous state stays active", moduleProblems);
         }
         if (target != null) {
             messages.send(target, "reload.success", "revision", Long.toString(state.revision().revision()));
@@ -168,6 +187,20 @@ public final class VibeCorePlugin extends JavaPlugin {
             if (!current.workers().equals(previous.workers())) {
                 messages.send(target, "reload.restart-required");
             }
+        }
+    }
+
+    /** Loads variables; problems are logged and leave modules that need variables unsupported. */
+    private List<Problem> startVariables() {
+        try {
+            List<Problem> problems = variables.start();
+            if (!problems.isEmpty()) {
+                logProblems("Variables not loaded; menus stay unavailable until this is fixed", problems);
+            }
+            return problems;
+        } catch (IOException failure) {
+            getLogger().log(Level.SEVERE, "Variables could not be read", failure);
+            return List.of(new Problem("data/variables.txt", "unreadable", "stored variables could not be read"));
         }
     }
 

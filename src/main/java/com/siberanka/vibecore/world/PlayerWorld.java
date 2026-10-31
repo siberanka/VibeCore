@@ -1,4 +1,4 @@
-package com.siberanka.vibecore.menu;
+package com.siberanka.vibecore.world;
 
 import com.siberanka.vibecore.core.text.Messages;
 import com.siberanka.vibecore.core.validation.Result;
@@ -43,14 +43,14 @@ import org.bukkit.inventory.PlayerInventory;
  * itself fails is never hidden: it is logged as compensation-required and
  * appended to {@code data/transactions.log} with a transaction id.
  */
-final class PlayerWorld implements Facts, SideEffects {
+public final class PlayerWorld implements Facts, SideEffects {
 
     private final Player player;
     private final Messages messages;
     private final Logger logger;
     private final Path ledger;
 
-    PlayerWorld(Player player, Messages messages, Logger logger, Path ledger) {
+    public PlayerWorld(Player player, Messages messages, Logger logger, Path ledger) {
         this.player = player;
         this.messages = messages;
         this.logger = logger;

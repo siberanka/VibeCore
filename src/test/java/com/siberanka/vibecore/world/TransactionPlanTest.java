@@ -1,4 +1,4 @@
-package com.siberanka.vibecore.menu;
+package com.siberanka.vibecore.world;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

@@ -2,32 +2,27 @@ package com.siberanka.vibecore.menu;
 
 import com.destroystokyo.paper.profile.PlayerProfile;
 import com.destroystokyo.paper.profile.ProfileProperty;
-import com.siberanka.vibecore.core.io.AtomicFiles;
 import com.siberanka.vibecore.core.module.ModuleId;
 import com.siberanka.vibecore.core.module.VibeModule;
-import com.siberanka.vibecore.core.task.BoundedWorkers;
 import com.siberanka.vibecore.core.task.TaskTracker;
 import com.siberanka.vibecore.core.text.Messages;
 import com.siberanka.vibecore.core.validation.Problem;
 import com.siberanka.vibecore.core.validation.Result;
-import com.siberanka.vibecore.integration.placeholder.PlaceholderApi;
 import com.siberanka.vibecore.logic.Action;
 import com.siberanka.vibecore.logic.Condition;
 import com.siberanka.vibecore.logic.Facts;
 import com.siberanka.vibecore.logic.LogicEngine;
 import com.siberanka.vibecore.logic.Outcome;
 import com.siberanka.vibecore.logic.SideEffects;
-import com.siberanka.vibecore.pack.GlyphIndex;
 import com.siberanka.vibecore.project.Identifier;
+import com.siberanka.vibecore.runtime.ModuleContext;
 import com.siberanka.vibecore.variable.VariableContext;
 import com.siberanka.vibecore.variable.VariableStore;
 import com.siberanka.vibecore.variable.VariableValue;
+import com.siberanka.vibecore.world.PlayerWorld;
+import com.siberanka.vibecore.world.TransactionPlan;
 import io.papermc.paper.event.player.AsyncChatEvent;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -37,17 +32,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.random.RandomGenerator;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.Tag;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
-import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -75,50 +62,41 @@ import org.bukkit.scheduler.BukkitTask;
 public final class MenuModule implements VibeModule, Listener {
 
     private static final long DEBOUNCE_NANOS = TimeUnit.MILLISECONDS.toNanos(150);
-    private static final long SAVE_PERIOD_TICKS = 20L * 60 * 5;
-    private static final int MAX_VALUES_PER_PLAYER = 256;
 
+    private final ModuleContext context;
     private final JavaPlugin plugin;
     private final TaskTracker tasks;
-    private final BoundedWorkers workers;
     private final Messages messages;
     private final Supplier<Set<String>> allowedCommands;
-    private final GlyphIndex glyphs;
-    private final Path dataFile;
-    private final Path ledger;
-    private final PlaceholderApi placeholders;
-    private final MiniMessage miniMessage = MiniMessage.miniMessage();
     private final Map<UUID, MenuSession> sessions = new ConcurrentHashMap<>();
     private final Map<UUID, PendingInput> inputs = new ConcurrentHashMap<>();
-    private final Object saveLock = new Object();
-    private final AtomicLong saveSequence = new AtomicLong();
-    private long lastWrittenSequence;
 
     private volatile MenuCatalog catalog;
-    private volatile VariableStore store;
-    private volatile LogicEngine engine;
-    private BukkitTask saveTask;
 
-    public MenuModule(JavaPlugin plugin, TaskTracker tasks, BoundedWorkers workers, Messages messages,
-                      Supplier<Set<String>> allowedCommands, GlyphIndex glyphs) {
+    public MenuModule(ModuleContext context, Supplier<Set<String>> allowedCommands) {
+        this.context = context;
+        this.plugin = context.plugin();
+        this.tasks = context.tasks();
+        this.messages = context.messages();
         this.allowedCommands = allowedCommands;
-        this.glyphs = glyphs;
-        this.plugin = plugin;
-        this.tasks = tasks;
-        this.workers = workers;
-        this.messages = messages;
-        this.dataFile = plugin.getDataFolder().toPath().resolve("data").resolve("variables.txt");
-        this.ledger = plugin.getDataFolder().toPath().resolve("data").resolve("transactions.log");
-        this.placeholders = new PlaceholderApi(plugin.getServer());
     }
 
-    private PlayerWorld world(Player viewer) {
-        return new PlayerWorld(viewer, messages, plugin.getLogger(), ledger);
+    private VariableStore store() {
+        return context.variables().store();
+    }
+
+    private LogicEngine engine() {
+        return context.variables().engine();
     }
 
     @Override
     public ModuleId id() {
         return ModuleId.MENU;
+    }
+
+    @Override
+    public Optional<String> unsupportedReason() {
+        return context.variables().running() ? Optional.empty() : Optional.of("variables are not loaded");
     }
 
     /** Material keys accepted for menu items: existing, non-legacy items other than air. */
@@ -127,86 +105,46 @@ public final class MenuModule implements VibeModule, Listener {
         return material != null && !material.isLegacy() && material.isItem() && !material.isAir();
     }
 
+    private Result<MenuCatalog> loadCatalog() {
+        return MenuCatalog.load(plugin.getDataFolder().toPath(), MenuModule::isItem, allowedCommands.get(),
+                context.variables().definitions());
+    }
+
     @Override
-    public void start() throws IOException {
-        Result<MenuCatalog> loaded = MenuCatalog.load(plugin.getDataFolder().toPath(), MenuModule::isItem,
-                allowedCommands.get());
+    public void start() {
+        Result<MenuCatalog> loaded = loadCatalog();
         if (!loaded.isAccepted()) {
             logProblems("Menu files rejected", loaded.problems());
             throw new IllegalStateException("menu files are invalid");
         }
-        VariableStore created = VariableStore.create(loaded.orThrow().variables(), MAX_VALUES_PER_PLAYER).orThrow();
-        if (Files.isRegularFile(dataFile, LinkOption.NOFOLLOW_LINKS)) {
-            Result<Integer> restored = created.loadPersistent(Files.readString(dataFile, StandardCharsets.UTF_8));
-            if (!restored.isAccepted()) {
-                logProblems("Stored variables are unreadable; refusing to start so they are not overwritten",
-                        restored.problems());
-                throw new IllegalStateException("variable data is invalid");
-            }
-        }
         catalog = loaded.orThrow();
-        store = created;
-        engine = new LogicEngine(created, RandomGenerator.getDefault());
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
-        saveTask = tasks.runTimer(this::saveInBackground, SAVE_PERIOD_TICKS, SAVE_PERIOD_TICKS);
-        plugin.getLogger().info("Loaded " + catalog.menus().size() + " menu(s) and "
-                + catalog.variables().size() + " variable(s)");
+        plugin.getLogger().info("Loaded " + catalog.menus().size() + " menu(s)");
     }
 
     @Override
     public void stop() {
-        for (MenuSession session : List.copyOf(sessions.values())) {
-            Player viewer = plugin.getServer().getPlayer(session.viewer());
-            if (viewer != null && viewer.getOpenInventory().getTopInventory().getHolder(false) == session) {
-                viewer.closeInventory();
-            }
-            finish(session, viewer);
-        }
+        closeAll();
         HandlerList.unregisterAll(this);
         inputs.values().forEach(pending -> tasks.cancel(pending.timeout()));
         inputs.clear();
-        if (saveTask != null) {
-            tasks.cancel(saveTask);
-            saveTask = null;
-        }
-        if (store != null) {
-            saveNow();
-        }
     }
 
     @Override
     public List<Problem> reload() {
-        Result<MenuCatalog> loaded = MenuCatalog.load(plugin.getDataFolder().toPath(), MenuModule::isItem,
-                allowedCommands.get());
+        Result<MenuCatalog> loaded = loadCatalog();
         if (!loaded.isAccepted()) {
             return loaded.problems();
         }
-        MenuCatalog next = loaded.orThrow();
-        if (!next.variables().equals(catalog.variables())) {
-            Result<VariableStore> created = VariableStore.create(next.variables(), MAX_VALUES_PER_PLAYER);
-            if (!created.isAccepted()) {
-                return created.problems();
-            }
-            Result<Integer> moved = created.orThrow().loadPersistent(store.serializePersistent());
-            if (!moved.isAccepted()) {
-                store.markPersistentDirty();
-                return moved.problems();
-            }
-            closeAll();
-            store = created.orThrow();
-            store.markPersistentDirty();
-            engine = new LogicEngine(store, RandomGenerator.getDefault());
-        } else {
-            closeAll();
-        }
-        catalog = next;
+        closeAll();
+        catalog = loaded.orThrow();
         return List.of();
     }
 
     private void closeAll() {
         for (MenuSession session : List.copyOf(sessions.values())) {
             Player viewer = plugin.getServer().getPlayer(session.viewer());
-            if (viewer != null) {
+            if (viewer != null && viewer.getOpenInventory().getTopInventory().getHolder(false) == session) {
                 viewer.closeInventory();
             }
             finish(session, viewer);
@@ -239,8 +177,8 @@ public final class MenuModule implements VibeModule, Listener {
             return Result.rejected(id.toString(), "no-permission", "viewer may not open this menu");
         }
         if (menu.openCondition() != null) {
-            Result<Boolean> allowed = engine.test(menu.openCondition(),
-                    VariableContext.player(viewer.getUniqueId()), LogicEngine.Limits.DEFAULT, world(viewer));
+            Result<Boolean> allowed = engine().test(menu.openCondition(),
+                    VariableContext.player(viewer.getUniqueId()), LogicEngine.Limits.DEFAULT, context.world(viewer));
             if (!allowed.isAccepted()) {
                 logProblems("Open condition of " + id + " could not be evaluated", allowed.problems());
                 return Result.rejected(allowed.problems());
@@ -250,12 +188,12 @@ public final class MenuModule implements VibeModule, Listener {
             }
         }
         MenuSession session = new MenuSession(viewer.getUniqueId(), menu, render(menu.title(), viewer, null));
-        VariableContext context = VariableContext.session(viewer.getUniqueId(), session.id());
+        VariableContext variables = VariableContext.session(viewer.getUniqueId(), session.id());
         if (!menu.onOpen().isEmpty()) {
-            PlayerWorld world = world(viewer);
-            Outcome outcome = engine.run(menu.onOpen(), context, LogicEngine.Limits.DEFAULT, world, world);
+            PlayerWorld world = context.world(viewer);
+            Outcome outcome = engine().run(menu.onOpen(), variables, LogicEngine.Limits.DEFAULT, world, world);
             if (!(outcome instanceof Outcome.Committed committed)) {
-                store.closeSession(session.id());
+                store().closeSession(session.id());
                 report(viewer, menu, outcome);
                 return Result.rejected(id.toString(), "on-open", "open actions did not complete");
             }
@@ -267,47 +205,15 @@ public final class MenuModule implements VibeModule, Listener {
         return Result.accepted(session);
     }
 
-    /** Text with {@code <player>} and {@code <var:key>} resolved as plain text for the viewer. */
     private Component render(String template, Player viewer, MenuSession session) {
-        UUID sessionId = session == null ? null : session.id();
-        VariableContext context = VariableContext.session(viewer.getUniqueId(), sessionId);
-        TagResolver variables = TagResolver.resolver("var", (arguments, ignored) -> {
-            StringBuilder key = new StringBuilder();
-            while (arguments.hasNext()) {
-                key.append(key.isEmpty() ? "" : ":").append(arguments.pop().value());
-            }
-            Result<Identifier> id = Identifier.parse("var", key.toString());
-            String value = id.isAccepted()
-                    ? Optional.of(store.get(id.orThrow(), context)).filter(Result::isAccepted)
-                    .map(result -> result.orThrow().canonical()).orElse("?")
-                    : "?";
-            return Tag.inserting(Component.text(value));
-        });
-        PlayerWorld world = world(viewer);
-        TagResolver data = TagResolver.resolver("data", (arguments, ignored) -> {
-            String name = arguments.hasNext() ? arguments.pop().value() : "";
-            Result<VariableValue> value = world.data(name);
-            return Tag.inserting(Component.text(value.isAccepted() ? value.orThrow().canonical() : "?"));
-        });
-        TagResolver papi = TagResolver.resolver("papi", (arguments, ignored) -> {
-            StringBuilder identifier = new StringBuilder();
-            while (arguments.hasNext()) {
-                identifier.append(identifier.isEmpty() ? "" : ":").append(arguments.pop().value());
-            }
-            String text = placeholders.expand(viewer, identifier.toString()).orElse("");
-            return Tag.inserting(LegacyComponentSerializer.legacySection().deserialize(text));
-        });
-        TagResolver glyph = TagResolver.resolver("glyph", (arguments, ignored) -> Tag.selfClosingInserting(
-                glyphs.component(arguments.hasNext() ? arguments.pop().value() : "").orElse(Component.empty())));
-        return miniMessage.deserialize(template, variables, data, papi, glyph,
-                Placeholder.unparsed("player", viewer.getName()));
+        return context.text().render(template, viewer, context.world(viewer), session == null ? null : session.id());
     }
 
-    private boolean test(Condition condition, VariableContext context, MenuDefinition menu, Player viewer) {
+    private boolean test(Condition condition, VariableContext variables, MenuDefinition menu, Player viewer) {
         if (condition == null) {
             return true;
         }
-        Result<Boolean> result = engine.test(condition, context, LogicEngine.Limits.DEFAULT, world(viewer));
+        Result<Boolean> result = engine().test(condition, variables, LogicEngine.Limits.DEFAULT, context.world(viewer));
         if (!result.isAccepted()) {
             logProblems("Condition in " + menu.id() + " could not be evaluated", result.problems());
             return false;
@@ -316,16 +222,16 @@ public final class MenuModule implements VibeModule, Listener {
     }
 
     private void draw(MenuSession session, Player viewer) {
-        VariableContext context = VariableContext.session(viewer.getUniqueId(), session.id());
+        VariableContext variables = VariableContext.session(viewer.getUniqueId(), session.id());
         MenuDefinition menu = session.menu();
         session.getInventory().clear();
         for (MenuItem item : menu.items()) {
-            if (!test(item.visible(), context, menu, viewer)) {
+            if (!test(item.visible(), variables, menu, viewer)) {
                 continue;
             }
             ItemLook look = item.base();
             for (MenuItem.State state : item.states()) {
-                if (test(state.when(), context, menu, viewer)) {
+                if (test(state.when(), variables, menu, viewer)) {
                     look = state.look().over(item.base());
                     break;
                 }
@@ -412,8 +318,8 @@ public final class MenuModule implements VibeModule, Listener {
         if (item == null || item.actionsFor(channel).isEmpty()) {
             return;
         }
-        VariableContext context = VariableContext.session(viewer.getUniqueId(), session.id());
-        if (!test(item.visible(), context, session.menu(), viewer)
+        VariableContext variables = VariableContext.session(viewer.getUniqueId(), session.id());
+        if (!test(item.visible(), variables, session.menu(), viewer)
                 || !session.tryBeginClick(System.nanoTime(), DEBOUNCE_NANOS)) {
             return;
         }
@@ -423,8 +329,8 @@ public final class MenuModule implements VibeModule, Listener {
                 tasks.runLater(() -> closeIfCurrent(viewer, session), 1);
                 return;
             }
-            PlayerWorld world = world(viewer);
-            Outcome outcome = engine.run(item.actionsFor(channel), context, LogicEngine.Limits.DEFAULT, world, world);
+            PlayerWorld world = context.world(viewer);
+            Outcome outcome = engine().run(item.actionsFor(channel), variables, LogicEngine.Limits.DEFAULT, world, world);
             if (outcome instanceof Outcome.Committed committed) {
                 perform(viewer, session, committed.effects(), true);
             } else {
@@ -452,7 +358,7 @@ public final class MenuModule implements VibeModule, Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.HIGH)
     public void onQuit(PlayerQuitEvent event) {
         UUID viewer = event.getPlayer().getUniqueId();
         PendingInput pending = inputs.remove(viewer);
@@ -463,7 +369,6 @@ public final class MenuModule implements VibeModule, Listener {
         if (session != null) {
             finish(session, event.getPlayer());
         }
-        store.disconnect(viewer);
     }
 
     /** Ends a session exactly once: runs its close actions, then drops its session values. */
@@ -474,13 +379,13 @@ public final class MenuModule implements VibeModule, Listener {
         sessions.remove(session.viewer(), session);
         List<Action> onClose = session.menu().onClose();
         if (!onClose.isEmpty()) {
-            VariableContext context = VariableContext.session(session.viewer(), session.id());
+            VariableContext variables = VariableContext.session(session.viewer(), session.id());
             Outcome outcome;
             if (viewer != null) {
-                PlayerWorld world = world(viewer);
-                outcome = engine.run(onClose, context, LogicEngine.Limits.DEFAULT, world, world);
+                PlayerWorld world = context.world(viewer);
+                outcome = engine().run(onClose, variables, LogicEngine.Limits.DEFAULT, world, world);
             } else {
-                outcome = engine.run(onClose, context, LogicEngine.Limits.DEFAULT, Facts.NONE, effects ->
+                outcome = engine().run(onClose, variables, LogicEngine.Limits.DEFAULT, Facts.NONE, effects ->
                         TransactionPlan.of(effects).empty() ? SideEffects.NONE.perform(effects)
                                 : Result.rejected("on-close", "viewer-offline", "money and items need the viewer"));
             }
@@ -492,7 +397,7 @@ public final class MenuModule implements VibeModule, Listener {
                 }
             }
         }
-        store.closeSession(session.id());
+        store().closeSession(session.id());
     }
 
     private void closeIfCurrent(Player viewer, MenuSession session) {
@@ -556,8 +461,8 @@ public final class MenuModule implements VibeModule, Listener {
                     + "', which is no longer allowed");
             return;
         }
-        VariableContext context = VariableContext.session(viewer.getUniqueId(), session.id());
-        Result<String> line = template.render(viewer.getName(), viewer.getUniqueId(), key -> store.get(key, context));
+        VariableContext variables = VariableContext.session(viewer.getUniqueId(), session.id());
+        Result<String> line = template.render(viewer.getName(), viewer.getUniqueId(), key -> store().get(key, variables));
         if (!line.isAccepted()) {
             logProblems("Command in " + menu.id() + " was not run", line.problems());
             return;
@@ -625,11 +530,11 @@ public final class MenuModule implements VibeModule, Listener {
         } else {
             Result<VariableValue> stored = text.length() > 256
                     ? Result.rejected("input", "length", "longer than 256 characters")
-                    : store.definition(pending.variable()).isAccepted()
-                    ? store.definition(pending.variable()).orThrow().parse(text)
+                    : store().definition(pending.variable()).isAccepted()
+                    ? store().definition(pending.variable()).orThrow().parse(text)
                     : Result.rejected("input", "unknown-variable", "the variable no longer exists");
             if (stored.isAccepted()) {
-                stored = store.set(pending.variable(), VariableContext.player(viewer.getUniqueId()), stored.orThrow());
+                stored = store().set(pending.variable(), VariableContext.player(viewer.getUniqueId()), stored.orThrow());
             }
             if (!stored.isAccepted()) {
                 messages.send(viewer, "menu.input-invalid", "reason", stored.problems().getFirst().detail());
@@ -652,48 +557,6 @@ public final class MenuModule implements VibeModule, Listener {
             }
             case Outcome.Committed ignored -> {
             }
-        }
-    }
-
-    private void saveInBackground() {
-        if (!store.persistentDirty()) {
-            return;
-        }
-        String text = store.serializePersistent();
-        long sequence = saveSequence.incrementAndGet();
-        VariableStore owner = store;
-        var submitted = workers.trySubmit(() -> {
-            write(text, sequence);
-            return null;
-        });
-        if (submitted.isEmpty()) {
-            owner.markPersistentDirty();
-            return;
-        }
-        submitted.get().whenComplete((ignored, failure) -> {
-            if (failure != null) {
-                owner.markPersistentDirty();
-                plugin.getLogger().log(Level.SEVERE, "Could not save variables", failure);
-            }
-        });
-    }
-
-    private void saveNow() {
-        try {
-            write(store.serializePersistent(), saveSequence.incrementAndGet());
-        } catch (IOException failure) {
-            store.markPersistentDirty();
-            plugin.getLogger().log(Level.SEVERE, "Could not save variables", failure);
-        }
-    }
-
-    private void write(String text, long sequence) throws IOException {
-        synchronized (saveLock) {
-            if (sequence <= lastWrittenSequence) {
-                return;
-            }
-            AtomicFiles.writeString(dataFile, text);
-            lastWrittenSequence = sequence;
         }
     }
 

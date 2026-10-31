@@ -1,4 +1,4 @@
-package com.siberanka.vibecore.menu;
+package com.siberanka.vibecore.world;
 
 import java.util.ArrayList;
 import java.util.List;

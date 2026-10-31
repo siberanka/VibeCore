@@ -7,11 +7,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.siberanka.vibecore.core.validation.Problem;
 import com.siberanka.vibecore.core.validation.Result;
 import com.siberanka.vibecore.project.Identifier;
+import com.siberanka.vibecore.variable.VariableDefinition;
+import com.siberanka.vibecore.variable.VariableFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,7 +45,13 @@ class MenuCatalogTest {
     }
 
     private Result<MenuCatalog> load() {
-        return MenuCatalog.load(dataFolder, MATERIALS::contains, Set.of("give"));
+        Result<List<VariableDefinition>> declared = VariableFile.load(dataFolder.resolve("variables.yml"));
+        if (!declared.isAccepted()) {
+            return Result.rejected(declared.problems());
+        }
+        Map<Identifier, VariableDefinition> variables = new LinkedHashMap<>();
+        declared.orThrow().forEach(variable -> variables.put(variable.key(), variable));
+        return MenuCatalog.load(dataFolder, MATERIALS::contains, Set.of("give"), variables);
     }
 
     private void writeMenu(String path, String yaml) throws IOException {
@@ -55,7 +66,7 @@ class MenuCatalogTest {
         assertTrue(catalog.isAccepted(), catalog.problems().toString());
         MenuDefinition example = catalog.orThrow().menu(new Identifier("vibecore", "example")).orElseThrow();
         assertEquals(5, example.items().size());
-        assertEquals(3, catalog.orThrow().variables().size());
+        assertEquals(3, VariableFile.load(dataFolder.resolve("variables.yml")).orThrow().size());
     }
 
     @Test

@@ -1,4 +1,4 @@
-package com.siberanka.vibecore.menu;
+package com.siberanka.vibecore.world;
 
 import com.siberanka.vibecore.logic.Action;
 import com.siberanka.vibecore.logic.LogicParser;
