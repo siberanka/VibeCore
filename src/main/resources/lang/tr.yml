@@ -18,6 +18,7 @@ help:
   pack: "Kaynak paketini oluşturur ve durumunu gösterir"
   hud: "HUD gösterir, gizler veya sıfırlar"
   popup: "Oyunculara popup gönderir"
+  hologram: "Hologram yerleştirir ve yönetir"
 
 status:
   header: "<gray>Sürüm <white><version></white> · yapılandırma revizyonu <white><revision></white></gray>"
@@ -96,3 +97,18 @@ popup:
   usage: "<gray>Kullanım: <white>/vibecore popup [popup] [oyuncu|*]</white></gray>"
   unknown: "<red>Bilinmeyen popup: <white><popup></white>.</red>"
   queued: "<gray>Popup <white><count></white> oyuncu için sıraya alındı; <white><full></white> sıra doluydu.</gray>"
+
+hologram:
+  disabled: "<red>Hologram modülü etkin değil.</red>"
+  usage: "<gray>Kullanım: <white>/vibecore hologram designs</white>, <white>list</white>, <white>nearest</white>, <white>place [tasarım]</white>, <white>move [id]</white>, <white>tp [id]</white> veya <white>remove [id]</white></gray>"
+  player-only: "<red>Bunu oyuncu olarak çalıştır.</red>"
+  designs: "<gray>Tasarımlar: <white><count></white></gray>"
+  placements: "<gray>Yerleşimler: <white><count></white> (ilk 20 gösterilir)</gray>"
+  entry: " <white><entry></white>"
+  nearest: "<gray>En yakın: <white><entry></white></gray>"
+  none-here: "<gray>Bu dünyada yerleştirilmiş hologram yok.</gray>"
+  placed: "<green><white><design></white> tasarımı <white><id></white> olarak yerleştirildi.</green>"
+  moved: "<green><white><id></white> buraya taşındı.</green>"
+  removed: "<green><white><id></white> yerleşimi kaldırıldı.</green>"
+  unknown-design: "<red>Bilinmeyen tasarım: <white><design></white>.</red>"
+  unknown-placement: "<red>Bilinmeyen yerleşim: <white><id></white>.</red>"

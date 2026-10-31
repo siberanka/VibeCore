@@ -24,7 +24,8 @@ VibeCore is a modular Paper plugin for server interfaces and visual content: inv
 | Command actions, paginated and generated shops | Planned |
 | HUDs on the action bar and boss bar with conditions and priorities, manual override, popups | Implemented, unit tested; not yet run on a live server |
 | Cursor screens | Planned |
-| Holograms, slides and motion | Planned |
+| Text holograms: designs with timed slides, per-viewer text and visibility, placements | Implemented, unit tested; not yet run on a live server |
+| Hologram media, motion keyframes, Bedrock fallback | Planned |
 | Rank badges and pixel tools | Planned |
 | Java resource pack: glyphs and item models built deterministically from `assets/` | Implemented, unit tested; not yet checked in a client |
 | Pack delivery: offer on join or by command, response tracking, keep-or-kick policy | Implemented; not yet checked in a client |
@@ -63,6 +64,7 @@ The plugin JAR is written to `target/`.
 | `/vibecore menu list` | `vibecore.menu.list` | operators |
 | `/vibecore hud show <hud>`, `hide`, `reset`, `who` | `vibecore.hud`; others need `vibecore.hud.others` | everyone / operators |
 | `/vibecore popup <popup> <player>`, `<popup> *` | `vibecore.popup`, `vibecore.popup.all` | operators |
+| `/vibecore hologram designs`, `list`, `nearest`, `place`, `move`, `tp`, `remove` | `vibecore.hologram` | operators |
 | `/vibecore pack status` | `vibecore.pack.status` | operators |
 | `/vibecore pack build` | `vibecore.pack.build` | operators |
 | `/vibecore pack send [player]`, `send *` | `vibecore.pack.send`, `vibecore.pack.send.all` | operators |
@@ -95,6 +97,14 @@ Enable the module with `modules.hud: true`. HUDs are YAML files in `huds/` and p
 - A HUD has an `actionbar` text, a `bossbar` (text, colour, overlay and progress as `value`/`max`) or both, refreshed every `refresh-ticks` (5 to 200). Text is only re-sent when it changed or the action bar is about to fade.
 - `/vibecore hud show <hud>`, `hide`, `reset` and `who` change or explain a player's HUD until they leave; acting on others needs `vibecore.hud.others`.
 - `/vibecore popup <popup> <player|*>` queues a title or action-bar popup for 0.5 to 600 seconds. Each player has a queue of 8; an action-bar popup takes the action bar while it is shown.
+
+## Holograms
+
+Enable the module with `modules.hologram: true`. Designs are YAML files in `holograms/` with timed slides of text lines, billboard, view range, scale, shadow, background and an optional per-viewer `visible` condition; the bundled example shows two slides. A design is placed with `/vibecore hologram place <design>` and can be placed many times; editing the design updates every placement.
+
+- Every viewer gets a separate text display that only they can see, so `<player>`, variables and data show each viewer's own values, and nobody sees another viewer's text.
+- Displays are never saved with the world: they exist only near viewers in loaded chunks and are removed when the viewer leaves the range, quits, or the module stops or reloads.
+- Placements are stored in `data/holograms.txt` with ids `h1`, `h2`, … that are never reused. `/vibecore hologram list`, `nearest`, `move <id>`, `tp <id>` and `remove <id>` manage them.
 
 ## Resource pack
 
@@ -151,7 +161,8 @@ VibeCore; envanter menüleri, imleçle kullanılan ekranlar, HUD ve açılır bi
 | Komut eylemleri, sayfalı ve üretilen mağazalar | Planlandı |
 | Koşul ve önceliğe göre actionbar ve bossbar HUD'ları, elle seçim, popup'lar | Uygulandı, birim testleri var; henüz canlı sunucuda çalıştırılmadı |
 | İmleç ekranları | Planlandı |
-| Hologramlar, slaytlar ve hareket | Planlandı |
+| Metin hologramları: süreli slaytlı tasarımlar, izleyiciye özel metin ve görünürlük, yerleşimler | Uygulandı, birim testleri var; henüz canlı sunucuda çalıştırılmadı |
+| Hologram medyası, hareket anahtar kareleri, Bedrock yedeği | Planlandı |
 | Rütbe rozetleri ve piksel araçları | Planlandı |
 | Java kaynak paketi: `assets/` klasöründen deterministik üretilen glyph ve item modelleri | Uygulandı, birim testleri var; henüz istemcide denenmedi |
 | Paket dağıtımı: girişte veya komutla sunma, yanıt takibi, tut ya da at politikası | Uygulandı; henüz istemcide denenmedi |
@@ -187,6 +198,10 @@ Sunucuda Paper 1.21.4 veya daha yeni bir sürüm ve Java 25 gerekir. Derlemek i�
 ### HUD ve popup'lar
 
 `modules.hud: true` ile açılır. HUD'lar `huds/`, popup'lar `popups/` klasöründeki YAML dosyalarıdır. Her oyuncu, en yüksek `priority` ve sonra ada göre `when` koşulu tutan ilk HUD'u görür; HUD actionbar metni, bossbar (metin, renk, görünüm ve `value`/`max` ilerlemesi) ya da ikisini birden içerir ve `refresh-ticks` aralığıyla yenilenir. `/vibecore hud show|hide|reset|who` oyuncu çıkana kadar seçimi değiştirir veya açıklar. `/vibecore popup <popup> <oyuncu|*>` 0,5–600 saniyelik başlık veya actionbar popup'ını oyuncu başına 8'lik sıraya ekler.
+
+### Hologramlar
+
+`modules.hologram: true` ile açılır. Tasarımlar `holograms/` klasöründeki YAML dosyalarıdır: süreli metin slaytları, billboard, görüş mesafesi, ölçek, gölge, arka plan ve isteğe bağlı izleyiciye özel `visible` koşulu. `/vibecore hologram place <tasarım>` ile yerleştirilir; bir tasarım birçok kez yerleştirilebilir ve tasarım değişince bütün yerleşimler güncellenir. Her izleyici yalnız kendisinin görebildiği ayrı bir metin görüntüsü alır, böylece kimse başkasının değerlerini görmez. Görüntüler dünyaya kaydedilmez; yalnız yüklü chunk'larda izleyicinin yakınında var olur. Yerleşimler `data/holograms.txt` dosyasında tekrar kullanılmayan `h1`, `h2`… kimlikleriyle tutulur.
 
 ### Kaynak paketi
 

@@ -18,6 +18,7 @@ help:
   pack: "Build the resource pack and show its status"
   hud: "Show, hide or reset a HUD"
   popup: "Send a popup to players"
+  hologram: "Place and manage holograms"
 
 status:
   header: "<gray>Version <white><version></white> · configuration revision <white><revision></white></gray>"
@@ -96,3 +97,18 @@ popup:
   usage: "<gray>Usage: <white>/vibecore popup [popup] [player|*]</white></gray>"
   unknown: "<red>Unknown popup <white><popup></white>.</red>"
   queued: "<gray>Popup queued for <white><count></white> player(s); <white><full></white> queue(s) were full.</gray>"
+
+hologram:
+  disabled: "<red>The hologram module is not enabled.</red>"
+  usage: "<gray>Usage: <white>/vibecore hologram designs</white>, <white>list</white>, <white>nearest</white>, <white>place [design]</white>, <white>move [id]</white>, <white>tp [id]</white> or <white>remove [id]</white></gray>"
+  player-only: "<red>Run this as a player.</red>"
+  designs: "<gray>Designs: <white><count></white></gray>"
+  placements: "<gray>Placements: <white><count></white> (first 20 shown)</gray>"
+  entry: " <white><entry></white>"
+  nearest: "<gray>Nearest: <white><entry></white></gray>"
+  none-here: "<gray>No hologram is placed in this world.</gray>"
+  placed: "<green>Placed <white><design></white> as <white><id></white>.</green>"
+  moved: "<green>Moved <white><id></white> here.</green>"
+  removed: "<green>Removed placement <white><id></white>.</green>"
+  unknown-design: "<red>Unknown design <white><design></white>.</red>"
+  unknown-placement: "<red>Unknown placement <white><id></white>.</red>"

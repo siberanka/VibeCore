@@ -29,7 +29,8 @@ public final class VibeCoreCommand implements TabExecutor {
         MENU("menu", "vibecore.menu.open"),
         PACK("pack", "vibecore.pack.status"),
         HUD("hud", "vibecore.hud"),
-        POPUP("popup", "vibecore.popup");
+        POPUP("popup", "vibecore.popup"),
+        HOLOGRAM("hologram", "vibecore.hologram");
 
         private final String label;
         private final String permission;
@@ -54,6 +55,7 @@ public final class VibeCoreCommand implements TabExecutor {
     private final MenuCommand menus;
     private final PackCommand packs;
     private final HudCommand huds;
+    private final HologramCommand holograms;
 
     public VibeCoreCommand(VibeCorePlugin plugin, Messages messages) {
         this.plugin = plugin;
@@ -61,6 +63,7 @@ public final class VibeCoreCommand implements TabExecutor {
         this.menus = new MenuCommand(plugin, messages);
         this.packs = new PackCommand(plugin, messages);
         this.huds = new HudCommand(plugin, messages);
+        this.holograms = new HologramCommand(plugin, messages);
     }
 
     @Override
@@ -84,6 +87,7 @@ public final class VibeCoreCommand implements TabExecutor {
             case PACK -> packs.execute(sender, Arrays.copyOfRange(args, 1, args.length));
             case HUD -> huds.hud(sender, Arrays.copyOfRange(args, 1, args.length));
             case POPUP -> huds.popup(sender, Arrays.copyOfRange(args, 1, args.length));
+            case HOLOGRAM -> holograms.execute(sender, Arrays.copyOfRange(args, 1, args.length));
         }
         return true;
     }
@@ -136,6 +140,10 @@ public final class VibeCoreCommand implements TabExecutor {
         }
         if (args.length > 1 && args[0].equalsIgnoreCase("popup") && sender.hasPermission(Subcommand.POPUP.permission)) {
             return huds.completePopup(sender, Arrays.copyOfRange(args, 1, args.length));
+        }
+        if (args.length > 1 && args[0].equalsIgnoreCase("hologram")
+                && sender.hasPermission(Subcommand.HOLOGRAM.permission)) {
+            return holograms.complete(sender, Arrays.copyOfRange(args, 1, args.length));
         }
         if (args.length != 1) {
             return List.of();

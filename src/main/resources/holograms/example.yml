@@ -1,0 +1,17 @@
+# Example hologram design. Place it with /vibecore hologram place example
+# Every viewer sees their own text; lines accept the same tags as menus.
+schema-version: 1
+billboard: center
+view-range: 24
+scale: 1.0
+shadow: true
+background: "#40000000"
+slides:
+  - seconds: 5
+    lines:
+      - "<gradient:#8b5cf6:#22d3ee>VibeCore</gradient>"
+      - "<gray>Welcome, <white><player></white>"
+  - seconds: 5
+    lines:
+      - "<gray>Online: <white><data:online>"
+      - "<gray>Your clicks: <white><var:example/clicks>"

@@ -61,6 +61,9 @@ permissions:
   vibecore.popup.all:
     description: Sends a popup to every online player.
     default: op
+  vibecore.hologram:
+    description: Places, moves, removes and lists holograms.
+    default: op
   vibecore.admin:
     description: Grants the listed administration permissions only.
     default: op
@@ -81,3 +84,4 @@ permissions:
       vibecore.hud.others: true
       vibecore.popup: true
       vibecore.popup.all: true
+      vibecore.hologram: true
