@@ -286,7 +286,15 @@ public final class LogicParser {
                 Identifier key = variable(path + ".var", map.get("var"));
                 return key != null ? new Operand.Variable(key) : null;
             }
-            problems.add(new Problem(path, "type", "expected a literal or {var: id}"));
+            if (map.size() == 1 && map.containsKey("data")) {
+                if (!(map.get("data") instanceof String name) || !Facts.DATA.containsKey(name)) {
+                    problems.add(new Problem(path + ".data", "unknown-data", "known data: "
+                            + new java.util.TreeSet<>(Facts.DATA.keySet())));
+                    return null;
+                }
+                return new Operand.Data(name);
+            }
+            problems.add(new Problem(path, "type", "expected a literal, {var: id} or {data: name}"));
             return null;
         }
         return switch (raw) {

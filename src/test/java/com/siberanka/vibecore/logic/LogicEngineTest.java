@@ -237,6 +237,28 @@ class LogicEngineTest {
     }
 
     @Test
+    void builtInDataFeedsConditions() {
+        Facts hurt = new Facts() {
+            @Override
+            public Result<Boolean> test(Condition.Fact fact) {
+                return Facts.NONE.test(fact);
+            }
+
+            @Override
+            public Result<VariableValue> data(String name) {
+                return name.equals("health") ? Result.accepted(VariableValue.number(6)) : Facts.super.data(name);
+            }
+        };
+        Condition low = LogicParser.condition("c", Map.of("compare",
+                Map.of("left", Map.of("data", "health"), "op", "<", "right", 10))).orThrow();
+        assertTrue(engine.test(low, CONTEXT, LogicEngine.Limits.DEFAULT, hurt).orThrow());
+        assertEquals("unsupported-fact",
+                engine.test(low, CONTEXT, LogicEngine.Limits.DEFAULT).problems().getFirst().code());
+        assertEquals("unknown-data", LogicParser.condition("c", Map.of("compare",
+                Map.of("left", Map.of("data", "wallet"), "op", "<", "right", 1))).problems().getFirst().code());
+    }
+
+    @Test
     void parsesFactConditions() {
         assertTrue(LogicParser.condition("c", Map.of("has-item", Map.of("material", "diamond", "amount", 3)))
                 .isAccepted());

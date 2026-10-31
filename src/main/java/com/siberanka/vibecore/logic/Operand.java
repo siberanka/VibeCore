@@ -5,7 +5,14 @@ import com.siberanka.vibecore.variable.VariableValue;
 import java.util.Objects;
 
 /** Value source of a comparison or assignment. */
-public sealed interface Operand permits Operand.Literal, Operand.Variable {
+public sealed interface Operand permits Operand.Literal, Operand.Variable, Operand.Data {
+
+    /** Built-in viewer data, answered by {@link Facts#data(String)}; see {@link Facts#DATA}. */
+    record Data(String name) implements Operand {
+        public Data {
+            Objects.requireNonNull(name, "name");
+        }
+    }
 
     record Literal(VariableValue value) implements Operand {
         public Literal {

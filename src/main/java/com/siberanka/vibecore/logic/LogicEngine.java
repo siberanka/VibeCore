@@ -197,6 +197,7 @@ public final class LogicEngine {
             return switch (operand) {
                 case Operand.Literal literal -> literal.value();
                 case Operand.Variable variable -> read(variable.key());
+                case Operand.Data data -> require(facts.data(data.name()));
             };
         }
 

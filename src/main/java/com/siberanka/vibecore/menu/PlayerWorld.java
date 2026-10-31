@@ -9,6 +9,7 @@ import com.siberanka.vibecore.logic.Condition;
 import com.siberanka.vibecore.logic.Facts;
 import com.siberanka.vibecore.logic.LogicParser;
 import com.siberanka.vibecore.logic.SideEffects;
+import com.siberanka.vibecore.variable.VariableValue;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -20,11 +21,15 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -68,6 +73,42 @@ final class PlayerWorld implements Facts, SideEffects {
             case "permission" -> Result.accepted(player.hasPermission(fact.arguments().get("node")));
             default -> Facts.NONE.test(fact);
         };
+    }
+
+    @Override
+    public Result<VariableValue> data(String name) {
+        Location location = player.getLocation();
+        VariableValue value = switch (name) {
+            case "name" -> VariableValue.text(player.getName());
+            case "uuid" -> VariableValue.text(player.getUniqueId().toString());
+            case "world" -> VariableValue.text(player.getWorld().getName());
+            case "biome" -> VariableValue.text(location.getBlock().getBiome().getKey().getKey());
+            case "gamemode" -> VariableValue.text(player.getGameMode().name().toLowerCase(Locale.ROOT));
+            case "health" -> VariableValue.number(player.getHealth());
+            case "max-health" -> VariableValue.number(attribute(Attribute.MAX_HEALTH));
+            case "food" -> VariableValue.number(player.getFoodLevel());
+            case "saturation" -> VariableValue.number(player.getSaturation());
+            case "armor" -> VariableValue.number(attribute(Attribute.ARMOR));
+            case "air" -> VariableValue.number(player.getRemainingAir());
+            case "level" -> VariableValue.number(player.getLevel());
+            case "exp" -> VariableValue.number(player.getExp());
+            case "x" -> VariableValue.number(location.getBlockX());
+            case "y" -> VariableValue.number(location.getBlockY());
+            case "z" -> VariableValue.number(location.getBlockZ());
+            case "ping" -> VariableValue.number(player.getPing());
+            case "online" -> VariableValue.number(player.getServer().getOnlinePlayers().size());
+            case "time" -> VariableValue.number(player.getWorld().getTime());
+            case "flying" -> VariableValue.bool(player.isFlying());
+            case "sneaking" -> VariableValue.bool(player.isSneaking());
+            default -> null;
+        };
+        return value == null ? Facts.super.data(name) : Result.accepted(value);
+    }
+
+    private double attribute(Attribute attribute) {
+        AttributeInstance instance = player.getAttribute(attribute);
+        double value = instance == null ? 0 : instance.getValue();
+        return Double.isFinite(value) ? value : 0;
     }
 
     private ItemStack[] storage() {

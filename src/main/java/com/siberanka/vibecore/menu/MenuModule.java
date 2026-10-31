@@ -8,6 +8,7 @@ import com.siberanka.vibecore.core.task.TaskTracker;
 import com.siberanka.vibecore.core.text.Messages;
 import com.siberanka.vibecore.core.validation.Problem;
 import com.siberanka.vibecore.core.validation.Result;
+import com.siberanka.vibecore.integration.placeholder.PlaceholderApi;
 import com.siberanka.vibecore.logic.Action;
 import com.siberanka.vibecore.logic.Condition;
 import com.siberanka.vibecore.logic.Facts;
@@ -17,6 +18,7 @@ import com.siberanka.vibecore.logic.SideEffects;
 import com.siberanka.vibecore.project.Identifier;
 import com.siberanka.vibecore.variable.VariableContext;
 import com.siberanka.vibecore.variable.VariableStore;
+import com.siberanka.vibecore.variable.VariableValue;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -41,6 +43,7 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.Tag;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -75,6 +78,7 @@ public final class MenuModule implements VibeModule, Listener {
     private final Supplier<Set<String>> allowedCommands;
     private final Path dataFile;
     private final Path ledger;
+    private final PlaceholderApi placeholders;
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
     private final Map<UUID, MenuSession> sessions = new ConcurrentHashMap<>();
     private final Object saveLock = new Object();
@@ -95,6 +99,7 @@ public final class MenuModule implements VibeModule, Listener {
         this.messages = messages;
         this.dataFile = plugin.getDataFolder().toPath().resolve("data").resolve("variables.txt");
         this.ledger = plugin.getDataFolder().toPath().resolve("data").resolve("transactions.log");
+        this.placeholders = new PlaceholderApi(plugin.getServer());
     }
 
     private PlayerWorld world(Player viewer) {
@@ -266,7 +271,22 @@ public final class MenuModule implements VibeModule, Listener {
                     : "?";
             return Tag.inserting(Component.text(value));
         });
-        return miniMessage.deserialize(template, variables, Placeholder.unparsed("player", viewer.getName()));
+        PlayerWorld world = world(viewer);
+        TagResolver data = TagResolver.resolver("data", (arguments, ignored) -> {
+            String name = arguments.hasNext() ? arguments.pop().value() : "";
+            Result<VariableValue> value = world.data(name);
+            return Tag.inserting(Component.text(value.isAccepted() ? value.orThrow().canonical() : "?"));
+        });
+        TagResolver papi = TagResolver.resolver("papi", (arguments, ignored) -> {
+            StringBuilder identifier = new StringBuilder();
+            while (arguments.hasNext()) {
+                identifier.append(identifier.isEmpty() ? "" : ":").append(arguments.pop().value());
+            }
+            String text = placeholders.expand(viewer, identifier.toString()).orElse("");
+            return Tag.inserting(LegacyComponentSerializer.legacySection().deserialize(text));
+        });
+        return miniMessage.deserialize(template, variables, data, papi,
+                Placeholder.unparsed("player", viewer.getName()));
     }
 
     private boolean test(Condition condition, VariableContext context, MenuDefinition menu, Player viewer) {

@@ -22,6 +22,8 @@ Third-party components keep their own licenses:
   build the plugin and not bundled.
 - VaultAPI (LGPL-3.0) is used only to build the optional economy bridge; the Vault plugin provides it at
   runtime and it is not bundled.
+- PlaceholderAPI is optional and only looked up at run time when installed; it is neither a build
+  dependency nor bundled.
 - JUnit Jupiter (EPL-2.0) and Apache Maven plugins (Apache-2.0) are used only to build and test.
 
 See docs/DEPENDENCIES.md for details.
