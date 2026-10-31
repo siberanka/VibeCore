@@ -11,6 +11,7 @@
 - Module registry with isolated start-up and honest states: enabled, disabled, not implemented, unsupported and failed.
 - `/vibecore help`, `status`, `diagnostics` and `reload` with separate permissions and permission-aware completion.
 - Shared model foundations: namespaced identifiers, project headers, schema migration chain, typed and scoped variables, and a persistent glyph and model data identity registry.
+- Variable store with per-player isolation, scope-aware lifecycle clearing, bounded per-player values and lossless persistence of persistent scopes.
 - Atomic file replacement and contained path resolution utilities.
 - VibeCore License (PolyForm Noncommercial 1.0.0 with additional terms) and NOTICE, packaged in the JAR.
 - Unit tests for configuration, messages, modules, workers, files, project model, variables and identity registry.

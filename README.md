@@ -17,7 +17,7 @@ VibeCore is a modular Paper plugin for server interfaces and visual content: inv
 | Area | Status |
 | --- | --- |
 | Core: lifecycle, validated configuration and safe reload, Turkish and English messages, module states, bounded workers, diagnostics | Implemented, unit tested; not yet run on a live server |
-| Shared model: identifiers, schema migrations, typed and scoped variables, persistent glyph and model data registry | Implemented, unit tested |
+| Shared model: identifiers, schema migrations, typed and scoped variables with a variable store, persistent glyph and model data registry | Implemented, unit tested |
 | Inventory menus and shops | Planned |
 | Cursor screens, HUDs and pop-ups | Planned |
 | Holograms, slides and motion | Planned |
@@ -88,7 +88,7 @@ VibeCore; envanter menüleri, imleçle kullanılan ekranlar, HUD ve açılır bi
 | Alan | Durum |
 | --- | --- |
 | Çekirdek: yaşam döngüsü, doğrulanan yapılandırma ve güvenli yeniden yükleme, Türkçe ve İngilizce mesajlar, modül durumları, sınırlı arka plan işçileri, tanı bilgisi | Uygulandı, birim testleri var; henüz canlı sunucuda çalıştırılmadı |
-| Ortak model: kimlikler, şema geçişleri, tipli ve kapsamlı değişkenler, kalıcı glyph ve model verisi kaydı | Uygulandı, birim testleri var |
+| Ortak model: kimlikler, şema geçişleri, tipli ve kapsamlı değişkenler ve değişken deposu, kalıcı glyph ve model verisi kaydı | Uygulandı, birim testleri var |
 | Envanter menüleri ve mağazalar | Planlandı |
 | İmleç ekranları, HUD ve açılır bildirimler | Planlandı |
 | Hologramlar, slaytlar ve hareket | Planlandı |
