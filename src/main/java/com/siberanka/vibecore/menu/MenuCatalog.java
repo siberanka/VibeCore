@@ -178,6 +178,7 @@ public record MenuCatalog(Map<Identifier, MenuDefinition> menus, List<VariableDe
                 case Action.AddVariable add -> refs.variables().add(add.key());
                 case Action.ToggleVariable toggle -> refs.variables().add(toggle.key());
                 case Action.ResetVariable reset -> refs.variables().add(reset.key());
+                case Action.Cooldown cooldown -> refs.variables().add(cooldown.key());
                 case Action.If branch -> {
                     collect(branch.condition(), refs);
                     collect(branch.then(), refs);

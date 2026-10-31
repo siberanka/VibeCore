@@ -11,7 +11,7 @@ import java.util.Objects;
  * returned to the caller, which performs them after the commit.
  */
 public sealed interface Action permits Action.SetVariable, Action.AddVariable, Action.ToggleVariable,
-        Action.ResetVariable, Action.If, Action.Fail, Action.Emit {
+        Action.ResetVariable, Action.If, Action.Fail, Action.Emit, Action.Cooldown {
 
     record SetVariable(Identifier key, Operand value) implements Action {
         public SetVariable {
@@ -46,6 +46,25 @@ public sealed interface Action permits Action.SetVariable, Action.AddVariable, A
             Objects.requireNonNull(condition, "condition");
             then = List.copyOf(then);
             otherwise = List.copyOf(otherwise);
+        }
+    }
+
+    /**
+     * Passes when at least {@code seconds} have elapsed since the time stored in
+     * the number variable {@code key}, and then stores the current time. Otherwise
+     * the chain fails with {@code fail}, where {@code <remaining>} is replaced by
+     * the remaining time. The variable's scope decides whether the cooldown is per
+     * session, per player or global, and whether it survives a restart.
+     */
+    record Cooldown(Identifier key, long seconds, String fail) implements Action {
+        public static final long MAX_SECONDS = 366L * 24 * 3600;
+
+        public Cooldown {
+            Objects.requireNonNull(key, "key");
+            Objects.requireNonNull(fail, "fail");
+            if (seconds < 1 || seconds > MAX_SECONDS) {
+                throw new IllegalArgumentException("seconds out of range");
+            }
         }
     }
 

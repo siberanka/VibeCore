@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.LongSupplier;
 import java.util.random.RandomGenerator;
 
 /**
@@ -37,10 +38,35 @@ public final class LogicEngine {
 
     private final VariableStore store;
     private final RandomGenerator random;
+    private final LongSupplier clock;
 
     public LogicEngine(VariableStore store, RandomGenerator random) {
+        this(store, random, () -> System.currentTimeMillis() / 1000);
+    }
+
+    /**
+     * @param clock current time in epoch seconds, used by cooldowns; wall-clock time
+     *              so that stored cooldowns stay meaningful across restarts
+     */
+    public LogicEngine(VariableStore store, RandomGenerator random, LongSupplier clock) {
         this.store = Objects.requireNonNull(store, "store");
         this.random = Objects.requireNonNull(random, "random");
+        this.clock = Objects.requireNonNull(clock, "clock");
+    }
+
+    /** Formats seconds as a compact duration such as {@code 1h 05m 09s}. */
+    static String duration(long seconds) {
+        long days = seconds / 86400;
+        long hours = seconds % 86400 / 3600;
+        long minutes = seconds % 3600 / 60;
+        long rest = seconds % 60;
+        if (days > 0) {
+            return days + "d " + String.format("%02dh %02dm", hours, minutes);
+        }
+        if (hours > 0) {
+            return hours + "h " + String.format("%02dm %02ds", minutes, rest);
+        }
+        return minutes > 0 ? minutes + "m " + String.format("%02ds", rest) : rest + "s";
     }
 
     public Outcome run(List<Action> chain, VariableContext context, Limits limits) {
@@ -208,6 +234,20 @@ public final class LogicEngine {
                 }
                 case Action.If branch -> actions(condition(branch.condition(), depth + 1)
                         ? branch.then() : branch.otherwise(), depth + 1);
+                case Action.Cooldown cooldown -> {
+                    if (!(read(cooldown.key()) instanceof VariableValue.NumberValue last)) {
+                        throw new Stop(List.of(new Problem(cooldown.key().toString(), "type",
+                                "cooldowns need a number variable")));
+                    }
+                    long now = clock.getAsLong();
+                    long elapsed = now - (long) last.value();
+                    // A stored time in the future means the clock moved back; it still blocks for at most one period.
+                    long remaining = elapsed < 0 ? Math.min(cooldown.seconds(), -elapsed) : cooldown.seconds() - elapsed;
+                    if (last.value() > 0 && remaining > 0 && (elapsed >= 0 || -elapsed <= cooldown.seconds())) {
+                        throw new Stop(cooldown.fail().replace("<remaining>", duration(remaining)));
+                    }
+                    write(cooldown.key(), VariableValue.number(now));
+                }
                 case Action.Fail fail -> throw new Stop(fail.reason());
                 case Action.Emit emit -> effects.add(emit);
             }

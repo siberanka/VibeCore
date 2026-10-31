@@ -168,6 +168,21 @@ public final class LogicParser {
                 List<Action> otherwise = chain(at + ".else", fields.get("else"), depth + 1);
                 return condition != null ? new Action.If(condition, then, otherwise) : null;
             }
+            case "cooldown" -> {
+                Map<String, Object> fields = section(at, body);
+                if (fields == null) {
+                    return null;
+                }
+                Identifier key = variable(at + ".var", fields.get("var"));
+                Object seconds = fields.get("seconds");
+                String fail = text(at + ".fail", fields.get("fail"));
+                if (!(seconds instanceof Integer value) || value < 1 || value > Action.Cooldown.MAX_SECONDS) {
+                    problems.add(new Problem(at + ".seconds", "range",
+                            "expected whole seconds from 1 to " + Action.Cooldown.MAX_SECONDS));
+                    return null;
+                }
+                return key != null && fail != null ? new Action.Cooldown(key, value, fail) : null;
+            }
             case "fail" -> {
                 String reason = text(at, body);
                 return reason != null ? new Action.Fail(reason) : null;

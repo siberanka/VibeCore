@@ -23,6 +23,9 @@ public record VariableDefinition(
     /** Hard ceiling for text values regardless of configuration. */
     public static final int TEXT_LIMIT = 1024;
 
+    /** Bounds of number variables; whole numbers up to this size stay exact. */
+    public static final double NUMBER_LIMIT = 1e15;
+
     private static final Set<String> KEYS = Set.of("key", "type", "scope", "default", "min", "max", "max-length");
 
     public VariableDefinition {
@@ -107,8 +110,8 @@ public record VariableDefinition(
             reader.report("scope", "unknown-scope",
                     "must be session, online-player, persistent-player or persistent-global");
         }
-        int minimum = reader.integer("min", Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MAX_VALUE);
-        int maximum = reader.integer("max", Integer.MAX_VALUE, Integer.MIN_VALUE, Integer.MAX_VALUE);
+        double minimum = reader.number("min", -NUMBER_LIMIT, -NUMBER_LIMIT, NUMBER_LIMIT);
+        double maximum = reader.number("max", NUMBER_LIMIT, -NUMBER_LIMIT, NUMBER_LIMIT);
         int maxLength = reader.integer("max-length", 256, 0, TEXT_LIMIT);
         if (minimum > maximum) {
             reader.report("min", "range", "must not be greater than max");

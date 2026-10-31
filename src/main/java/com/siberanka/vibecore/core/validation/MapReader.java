@@ -98,6 +98,24 @@ public final class MapReader {
         return (int) value;
     }
 
+    /** Reads a finite number (whole or decimal) within the given bounds. */
+    public double number(String key, double fallback, double min, double max) {
+        Object raw = values.get(key);
+        if (raw == null) {
+            return fallback;
+        }
+        if (!(raw instanceof Number number) || !Double.isFinite(number.doubleValue())) {
+            report(key, "type", "expected a number");
+            return fallback;
+        }
+        double value = number.doubleValue();
+        if (value < min || value > max) {
+            report(key, "range", "must be between " + min + " and " + max);
+            return fallback;
+        }
+        return value;
+    }
+
     public boolean bool(String key, boolean fallback) {
         Object raw = values.get(key);
         if (raw == null) {

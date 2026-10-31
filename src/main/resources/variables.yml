@@ -3,7 +3,8 @@
 #   online-player      one player while online; cleared on disconnect
 #   persistent-player  one player, saved to data/variables.txt
 #   persistent-global  one value for the server, saved to data/variables.txt
-# Writes outside min/max or max-length are rejected, never clamped.
+# Writes outside min/max or max-length are rejected, never clamped. Number
+# bounds may be decimal and up to 1e15 (epoch seconds for cooldowns fit).
 variables:
   - key: example/clicks
     type: number

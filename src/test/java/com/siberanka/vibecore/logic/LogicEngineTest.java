@@ -206,6 +206,37 @@ class LogicEngineTest {
     }
 
     @Test
+    void cooldownBlocksUntilItsPeriodPassed() {
+        VariableStore claims = VariableStore.create(List.of(VariableDefinition.read(Map.of("key", "daily",
+                "type", "number", "scope", "persistent-player", "min", 0, "max", 9_999_999_999L)).orThrow()), 4)
+                .orThrow();
+        long[] now = {1_000_000};
+        LogicEngine timed = new LogicEngine(claims, fixedRandom(0.5), () -> now[0]);
+        List<Action> claim = parse(List.of(
+                Map.of("cooldown", Map.of("var", "daily", "seconds", 3600, "fail", "<red>Wait <remaining>")),
+                Map.of("emit", Map.of("type", "message", "text", "claimed"))));
+
+        assertInstanceOf(Outcome.Committed.class, timed.run(claim, CONTEXT, LogicEngine.Limits.DEFAULT));
+        now[0] += 1200;
+        Outcome blocked = timed.run(claim, CONTEXT, LogicEngine.Limits.DEFAULT);
+        assertEquals("<red>Wait 40m 00s", assertInstanceOf(Outcome.Failed.class, blocked).reason());
+        now[0] += 2400;
+        assertInstanceOf(Outcome.Committed.class, timed.run(claim, CONTEXT, LogicEngine.Limits.DEFAULT));
+
+        now[0] -= 10 * 3600;
+        assertInstanceOf(Outcome.Committed.class, timed.run(claim, CONTEXT, LogicEngine.Limits.DEFAULT),
+                "a clock that moved back far does not lock the player out forever");
+    }
+
+    @Test
+    void durationsAreCompact() {
+        assertEquals("9s", LogicEngine.duration(9));
+        assertEquals("1m 05s", LogicEngine.duration(65));
+        assertEquals("2h 00m 01s", LogicEngine.duration(7201));
+        assertEquals("3d 04h 00m", LogicEngine.duration(3 * 86400 + 4 * 3600));
+    }
+
+    @Test
     void parsesFactConditions() {
         assertTrue(LogicParser.condition("c", Map.of("has-item", Map.of("material", "diamond", "amount", 3)))
                 .isAccepted());
