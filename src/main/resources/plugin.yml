@@ -24,6 +24,18 @@ permissions:
   vibecore.admin.reload:
     description: Validates and activates configuration and messages.
     default: op
+  vibecore.menu.open:
+    description: Opens menus for yourself; each menu may require its own permission as well.
+    default: true
+  vibecore.menu.open.others:
+    description: Opens menus for other players; the viewer must still be allowed to open the menu.
+    default: op
+  vibecore.menu.close.others:
+    description: Closes the VibeCore menu of another player.
+    default: op
+  vibecore.menu.list:
+    description: Lists the loaded menus.
+    default: op
   vibecore.admin:
     description: Grants the listed administration permissions only.
     default: op
@@ -32,3 +44,7 @@ permissions:
       vibecore.admin.status: true
       vibecore.admin.diagnostics: true
       vibecore.admin.reload: true
+      vibecore.menu.open: true
+      vibecore.menu.open.others: true
+      vibecore.menu.close.others: true
+      vibecore.menu.list: true

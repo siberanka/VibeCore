@@ -7,12 +7,15 @@ import com.siberanka.vibecore.core.config.CoreState;
 import com.siberanka.vibecore.core.config.CoreStateLoader;
 import com.siberanka.vibecore.core.diagnostic.Diagnostics;
 import com.siberanka.vibecore.core.module.ModuleRegistry;
+import com.siberanka.vibecore.core.module.ModuleState;
 import com.siberanka.vibecore.core.task.BoundedWorkers;
 import com.siberanka.vibecore.core.task.TaskTracker;
 import com.siberanka.vibecore.core.text.MessageCatalog;
 import com.siberanka.vibecore.core.text.Messages;
 import com.siberanka.vibecore.core.validation.Problem;
 import com.siberanka.vibecore.core.validation.Result;
+import com.siberanka.vibecore.menu.MenuModule;
+import java.io.File;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -40,6 +43,11 @@ public final class VibeCorePlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        for (String resource : List.of("variables.yml", "menus/example.yml")) {
+            if (!new File(getDataFolder(), resource).exists()) {
+                saveResource(resource, false);
+            }
+        }
         loader = new CoreStateLoader(getDataFolder().toPath(), this::getResource);
 
         Result<CoreState> initial = loader.load();
@@ -59,10 +67,11 @@ public final class VibeCorePlugin extends JavaPlugin {
         workers = new BoundedWorkers("VibeCore", workerSettings.threads(), workerSettings.queueCapacity(), getLogger());
         tasks = new TaskTracker(this);
         modules = new ModuleRegistry(getLogger());
+        messages = new Messages(this::catalog, () -> state.get().settings().defaultLocale());
+        modules.register(new MenuModule(this, tasks, workers, messages));
         modules.apply(state.get().settings().enabledModules());
         diagnostics = new Diagnostics(getPluginMeta().getVersion(), getServer(), state, modules, workers, tasks);
 
-        messages = new Messages(this::catalog, () -> state.get().settings().defaultLocale());
         PluginCommand command = Objects.requireNonNull(getCommand("vibecore"), "vibecore command missing");
         VibeCoreCommand executor = new VibeCoreCommand(this, messages);
         command.setExecutor(executor);
@@ -132,11 +141,24 @@ public final class VibeCorePlugin extends JavaPlugin {
             return;
         }
         CoreSettings current = state.get().settings();
-        if (!current.enabledModules().equals(previous.enabledModules())) {
+        List<Problem> moduleProblems = List.of();
+        boolean retryFailed = modules.statuses().stream().anyMatch(status ->
+                status.state() == ModuleState.FAILED && current.enabledModules().contains(status.id()));
+        if (!current.enabledModules().equals(previous.enabledModules()) || retryFailed) {
             modules.apply(current.enabledModules());
+        } else {
+            moduleProblems = modules.reloadRunning();
+            if (!moduleProblems.isEmpty()) {
+                logProblems("Module files rejected; previous module state stays active", moduleProblems);
+            }
         }
         if (target != null) {
             messages.send(target, "reload.success", "revision", Long.toString(state.revision().revision()));
+            if (!moduleProblems.isEmpty()) {
+                messages.send(target, "reload.module-rejected", "count", Integer.toString(moduleProblems.size()));
+                moduleProblems.stream().limit(PROBLEMS_SHOWN_IN_CHAT).forEach(problem ->
+                        messages.sendLine(target, "reload.problem", "problem", problem.toString()));
+            }
             if (!current.workers().equals(previous.workers())) {
                 messages.send(target, "reload.restart-required");
             }

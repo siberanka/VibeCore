@@ -1,0 +1,55 @@
+# Example menu: /vibecore menu open example
+# This file becomes the menu vibecore:example. Every text field accepts
+# MiniMessage, <player> and <var:key>; inserted values are plain text.
+schema-version: 1
+title: "<dark_gray>VibeCore example"
+rows: 3
+
+items:
+  counter:
+    slot: 13
+    material: emerald
+    name: "<green>Click me"
+    lore:
+      - "<gray>You clicked <white><var:example/clicks></white> times."
+      - "<gray>Left: +1 · Right: reset"
+    states:
+      # The first matching state wins; empty fields come from the item above.
+      - when: {compare: {left: {var: example/clicks}, op: ">=", right: 10}}
+        material: diamond
+        name: "<aqua>Click me"
+        glow: true
+    actions:
+      left:
+        - add: {var: example/clicks, amount: 1}
+        - if:
+            condition: {compare: {left: {var: example/sound}, op: "==", right: true}}
+            then:
+              - emit: {type: sound, sound: ui.button.click, volume: 0.6, pitch: 1.4}
+      right:
+        - if:
+            condition: {compare: {left: {var: example/clicks}, op: "==", right: 0}}
+            then:
+              - fail: "<gray>There is nothing to reset."
+        - reset: example/clicks
+        - emit: {type: message, text: "<yellow>Counter reset."}
+
+  sound:
+    slot: 11
+    material: note_block
+    name: "<white>Click sound: <green>on"
+    states:
+      - when: {compare: {left: {var: example/sound}, op: "==", right: false}}
+        material: barrier
+        name: "<white>Click sound: <red>off"
+    actions:
+      left:
+        - toggle: example/sound
+
+  close:
+    slot: 15
+    material: oak_door
+    name: "<red>Close"
+    actions:
+      left:
+        - emit: {type: close}

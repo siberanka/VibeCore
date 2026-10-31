@@ -1,11 +1,13 @@
 package com.siberanka.vibecore.core.module;
 
+import com.siberanka.vibecore.core.validation.Problem;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -70,6 +72,28 @@ public final class ModuleRegistry {
                     "start-up failed: " + failure.getClass().getSimpleName()));
             safeStop(module);
         }
+    }
+
+    /** Reloads every running module and collects the problems of rejected candidates. */
+    public synchronized List<Problem> reloadRunning() {
+        List<Problem> problems = new ArrayList<>();
+        for (ModuleId id : startOrder) {
+            try {
+                problems.addAll(implementations.get(id).reload());
+            } catch (RuntimeException | LinkageError failure) {
+                logger.log(Level.SEVERE, "Module " + id.key() + " failed to reload", failure);
+                problems.add(new Problem(id.key(), "failure",
+                        "reload failed: " + failure.getClass().getSimpleName()));
+            }
+        }
+        return problems;
+    }
+
+    /** Returns the running implementation of a module, if it is enabled. */
+    public synchronized <T extends VibeModule> Optional<T> running(ModuleId id, Class<T> type) {
+        VibeModule module = implementations.get(id);
+        return startOrder.contains(id) && type.isInstance(module)
+                ? Optional.of(type.cast(module)) : Optional.empty();
     }
 
     /** Stops running modules in reverse start order. */

@@ -4,6 +4,7 @@ import com.siberanka.vibecore.VibeCorePlugin;
 import com.siberanka.vibecore.core.module.ModuleStatus;
 import com.siberanka.vibecore.core.text.Messages;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -24,7 +25,8 @@ public final class VibeCoreCommand implements TabExecutor {
         HELP("help", "vibecore.command.help"),
         STATUS("status", "vibecore.admin.status"),
         DIAGNOSTICS("diagnostics", "vibecore.admin.diagnostics"),
-        RELOAD("reload", "vibecore.admin.reload");
+        RELOAD("reload", "vibecore.admin.reload"),
+        MENU("menu", "vibecore.menu.open");
 
         private final String label;
         private final String permission;
@@ -46,10 +48,12 @@ public final class VibeCoreCommand implements TabExecutor {
 
     private final VibeCorePlugin plugin;
     private final Messages messages;
+    private final MenuCommand menus;
 
     public VibeCoreCommand(VibeCorePlugin plugin, Messages messages) {
         this.plugin = plugin;
         this.messages = messages;
+        this.menus = new MenuCommand(plugin, messages);
     }
 
     @Override
@@ -69,6 +73,7 @@ public final class VibeCoreCommand implements TabExecutor {
             case STATUS -> status(sender);
             case DIAGNOSTICS -> diagnostics(sender);
             case RELOAD -> plugin.reload(sender);
+            case MENU -> menus.execute(sender, Arrays.copyOfRange(args, 1, args.length));
         }
         return true;
     }
@@ -110,6 +115,9 @@ public final class VibeCoreCommand implements TabExecutor {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length > 1 && args[0].equalsIgnoreCase("menu") && sender.hasPermission(Subcommand.MENU.permission)) {
+            return menus.complete(sender, Arrays.copyOfRange(args, 1, args.length));
+        }
         if (args.length != 1) {
             return List.of();
         }

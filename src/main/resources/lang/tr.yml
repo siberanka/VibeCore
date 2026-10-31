@@ -14,6 +14,7 @@ help:
   status: "Modül durumlarını gösterir"
   diagnostics: "Çalışma zamanı tanı bilgisini gösterir"
   reload: "Yapılandırmayı doğrular ve uygular"
+  menu: "Menüleri açar, kapatır ve listeler"
 
 status:
   header: "<gray>Sürüm <white><version></white> · yapılandırma revizyonu <white><revision></white></gray>"
@@ -38,3 +39,19 @@ reload:
   more: " <dark_gray>… ve <count> sorun daha sunucu günlüğünde.</dark_gray>"
   in-progress: "<yellow>Zaten süren bir yeniden yükleme var.</yellow>"
   restart-required: "<yellow>İşçi ayarları sunucu yeniden başlatılınca değişir.</yellow>"
+  module-rejected: "<yellow>Bazı modül dosyaları reddedildi; önceki durumları etkin kalır (<count> sorun):</yellow>"
+
+menu:
+  disabled: "<red>Menü modülü etkin değil.</red>"
+  usage: "<gray>Kullanım: <white>/vibecore menu open [menü] [oyuncu]</white>, <white>close [oyuncu]</white> veya <white>list</white></gray>"
+  unknown: "<red>Bilinmeyen menü: <white><menu></white>.</red>"
+  denied: "<red>Bu menüyü açamazsın.</red>"
+  target-denied: "<red><player> bu menüyü açamaz.</red>"
+  player-missing: "<red>Bu oyuncu çevrimiçi değil.</red>"
+  console-target: "<red>Konsoldan çalıştırırken bir oyuncu adı belirt.</red>"
+  opened-for: "<gray><white><player></white> için <white><menu></white> açıldı.</gray>"
+  closed-for: "<gray><white><player></white> oyuncusunun menüsü kapatıldı.</gray>"
+  not-open: "<gray><player> oyuncusunun açık bir VibeCore menüsü yok.</gray>"
+  list-header: "<gray>Menüler: <white><count></white></gray>"
+  list-entry: " <white><menu></white> <dark_gray>(<rows> satır)</dark_gray>"
+  action-error: "<red>Bu işlem tamamlanamadı. Ayrıntılar sunucu günlüğünde.</red>"

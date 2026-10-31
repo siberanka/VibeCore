@@ -266,6 +266,11 @@ public final class VariableStore {
         return persistentDirty;
     }
 
+    /** Flags persistent values for saving again, for example after a failed write. */
+    public void markPersistentDirty() {
+        persistentDirty = true;
+    }
+
     public int orphanCount() {
         synchronized (orphans) {
             return orphans.size();

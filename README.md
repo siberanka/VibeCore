@@ -19,7 +19,8 @@ VibeCore is a modular Paper plugin for server interfaces and visual content: inv
 | Core: lifecycle, validated configuration and safe reload, Turkish and English messages, module states, bounded workers, diagnostics | Implemented, unit tested; not yet run on a live server |
 | Shared model: identifiers, schema migrations, typed and scoped variables with a variable store, persistent glyph and model data registry | Implemented, unit tested |
 | Condition and action engine: comparisons, branches, fail gates, variable actions with all-or-nothing commit | Implemented, unit tested |
-| Inventory menus and shops | Planned |
+| Inventory menus: YAML menus with states, visibility, click actions and protected sessions | Implemented, unit tested; not yet run on a live server |
+| Shops, economy, item and command actions | Planned |
 | Cursor screens, HUDs and pop-ups | Planned |
 | Holograms, slides and motion | Planned |
 | Rank badges and pixel tools | Planned |
@@ -52,10 +53,24 @@ The plugin JAR is written to `target/`.
 | `/vibecore status` | `vibecore.admin.status` | operators |
 | `/vibecore diagnostics` | `vibecore.admin.diagnostics` | operators |
 | `/vibecore reload` | `vibecore.admin.reload` | operators |
+| `/vibecore menu open <menu>` | `vibecore.menu.open` and the menu's own permission | everyone |
+| `/vibecore menu open <menu> <player>` | `vibecore.menu.open.others` | operators |
+| `/vibecore menu close [player]` | `vibecore.menu.close.others` for other players | operators |
+| `/vibecore menu list` | `vibecore.menu.list` | operators |
 
 `vibecore.admin` grants exactly the administration permissions listed above. Help and tab completion show only the commands the sender may use.
 
 `/vibecore reload` validates `config.yml` and the message files as a whole on a background worker. If any problem is found, the previous configuration stays active and the problems are reported.
+
+## Menus
+
+Enable the module with `modules.menu: true` in `config.yml`. Menus are YAML files in `plugins/VibeCore/menus/`; `menus/shop/main.yml` becomes the menu `shop/main`. Variables are declared in `variables.yml`, and persistent values are saved to `data/variables.txt`. The bundled `menus/example.yml` shows states, visibility, sounds, messages and a reset with a fail gate; open it with `/vibecore menu open example`.
+
+- Every interaction with an open menu is cancelled: clicks in either inventory, shift and number-key moves, double clicks, drags, drops and off-hand swaps. Only left, right, shift-left, shift-right and middle clicks on a visible item run that item's actions.
+- The menu permission is checked again on every click, and each action chain re-checks its own conditions. Variable changes of a chain are saved all or none.
+- Clicks are debounced per session, and a click is ignored while the previous one is still running.
+- Close actions run exactly once and cannot reopen a menu.
+- `/vibecore reload` validates every menu and variable file together; an invalid file keeps the previous menus in effect.
 
 ## Development
 
@@ -91,7 +106,8 @@ VibeCore; envanter menüleri, imleçle kullanılan ekranlar, HUD ve açılır bi
 | Çekirdek: yaşam döngüsü, doğrulanan yapılandırma ve güvenli yeniden yükleme, Türkçe ve İngilizce mesajlar, modül durumları, sınırlı arka plan işçileri, tanı bilgisi | Uygulandı, birim testleri var; henüz canlı sunucuda çalıştırılmadı |
 | Ortak model: kimlikler, şema geçişleri, tipli ve kapsamlı değişkenler ve değişken deposu, kalıcı glyph ve model verisi kaydı | Uygulandı, birim testleri var |
 | Koşul ve eylem motoru: karşılaştırmalar, dallanma, başarısızlık kapıları, ya hep ya hiç işlenen değişken eylemleri | Uygulandı, birim testleri var |
-| Envanter menüleri ve mağazalar | Planlandı |
+| Envanter menüleri: durumlar, görünürlük, tıklama eylemleri ve korumalı oturumlarla YAML menüler | Uygulandı, birim testleri var; henüz canlı sunucuda çalıştırılmadı |
+| Mağazalar, ekonomi, item ve komut eylemleri | Planlandı |
 | İmleç ekranları, HUD ve açılır bildirimler | Planlandı |
 | Hologramlar, slaytlar ve hareket | Planlandı |
 | Rütbe rozetleri ve piksel araçları | Planlandı |
@@ -107,7 +123,16 @@ Sunucuda Paper 1.21.4 veya daha yeni bir sürüm ve Java 25 gerekir. Derlemek i�
 
 ### Komutlar
 
-`/vibecore help` herkese açıktır. `status`, `diagnostics` ve `reload` varsayılan olarak yalnız operatörlere açıktır (`vibecore.admin.*`). `/vibecore reload` bütün yapılandırmayı doğrular; tek bir hata bile varsa önceki yapılandırma etkin kalır.
+`/vibecore help` herkese açıktır. `status`, `diagnostics` ve `reload` varsayılan olarak yalnız operatörlere açıktır (`vibecore.admin.*`). `/vibecore reload` bütün yapılandırmayı doğrular; tek bir hata bile varsa önceki yapılandırma etkin kalır. Menüler için `/vibecore menu open <menü> [oyuncu]`, `close [oyuncu]` ve `list` kullanılır; başka oyuncu adına işlem `.others` yetkisi ister ve menünün kendi yetkisi her zaman görüntüleyen oyuncuya göre denetlenir.
+
+### Menüler
+
+`config.yml` içinde `modules.menu: true` ile açılır. Menüler `plugins/VibeCore/menus/` altındaki YAML dosyalarıdır; `menus/shop/main.yml` dosyası `shop/main` menüsü olur. Değişkenler `variables.yml` içinde tanımlanır, kalıcı değerler `data/variables.txt` dosyasına yazılır. Örnek için `/vibecore menu open example`.
+
+- Açık menüdeki her etkileşim iptal edilir: iki envanterdeki tıklamalar, shift ve sayı tuşu taşımaları, çift tıklama, sürükleme, bırakma ve ikinci ele alma. Yalnız görünür bir öğeye yapılan sol, sağ, shift-sol, shift-sağ ve orta tıklama o öğenin eylemlerini çalıştırır.
+- Menü yetkisi her tıklamada yeniden denetlenir; her eylem zinciri kendi koşullarını yeniden kontrol eder ve değişken değişikliklerini ya hep ya hiç kaydeder.
+- Tıklamalar oturum başına sınırlanır; önceki tıklama sürerken yenisi yok sayılır. Kapanış eylemleri tam bir kez çalışır ve menüyü yeniden açamaz.
+- `/vibecore reload` bütün menü ve değişken dosyalarını birlikte doğrular; hatalı dosya önceki menüleri etkin bırakır.
 
 ### Lisans
 

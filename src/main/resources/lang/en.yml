@@ -14,6 +14,7 @@ help:
   status: "Show module states"
   diagnostics: "Show runtime diagnostics"
   reload: "Validate and apply configuration"
+  menu: "Open, close and list menus"
 
 status:
   header: "<gray>Version <white><version></white> · configuration revision <white><revision></white></gray>"
@@ -38,3 +39,19 @@ reload:
   more: " <dark_gray>… and <count> more in the server log.</dark_gray>"
   in-progress: "<yellow>A reload is already in progress.</yellow>"
   restart-required: "<yellow>Worker settings change after a restart.</yellow>"
+  module-rejected: "<yellow>Some module files were rejected; their previous state stays active (<count> problem(s)):</yellow>"
+
+menu:
+  disabled: "<red>The menu module is not enabled.</red>"
+  usage: "<gray>Usage: <white>/vibecore menu open [menu] [player]</white>, <white>close [player]</white> or <white>list</white></gray>"
+  unknown: "<red>Unknown menu <white><menu></white>.</red>"
+  denied: "<red>You cannot open this menu.</red>"
+  target-denied: "<red><player> cannot open this menu.</red>"
+  player-missing: "<red>That player is not online.</red>"
+  console-target: "<red>Name a player when running this from the console.</red>"
+  opened-for: "<gray>Opened <white><menu></white> for <white><player></white>.</gray>"
+  closed-for: "<gray>Closed the menu of <white><player></white>.</gray>"
+  not-open: "<gray><player> has no VibeCore menu open.</gray>"
+  list-header: "<gray>Menus: <white><count></white></gray>"
+  list-entry: " <white><menu></white> <dark_gray>(<rows> rows)</dark_gray>"
+  action-error: "<red>This action could not be completed. The server log has details.</red>"

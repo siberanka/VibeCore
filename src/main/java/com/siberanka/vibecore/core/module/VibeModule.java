@@ -1,5 +1,7 @@
 package com.siberanka.vibecore.core.module;
 
+import com.siberanka.vibecore.core.validation.Problem;
+import java.util.List;
 import java.util.Optional;
 
 /** A feature module managed by {@link ModuleRegistry}. */
@@ -27,4 +29,14 @@ public interface VibeModule {
 
     /** Releases every task, session and render state owned by the module. */
     void stop() throws Exception;
+
+    /**
+     * Validates and activates the module's own files while it keeps running.
+     * A rejected candidate must leave the previous module state in effect.
+     *
+     * @return the problems of a rejected candidate, or an empty list
+     */
+    default List<Problem> reload() {
+        return List.of();
+    }
 }

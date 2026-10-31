@@ -40,7 +40,7 @@ public final class CoreStateLoader {
 
     public Result<CoreState> load() {
         List<Problem> problems = new ArrayList<>();
-        Map<String, Object> config = readFile(dataFolder.resolve("config.yml"), "config.yml", problems);
+        Map<String, Object> config = readYaml(dataFolder.resolve("config.yml"), "config.yml", problems);
         Result<CoreSettings> settings = config == null
                 ? Result.rejected("config.yml", "unreadable", "configuration could not be read")
                 : SettingsParser.parse(config);
@@ -98,7 +98,7 @@ public final class CoreStateLoader {
                     problems.add(new Problem("lang/" + fileName, "unsupported", "unsupported locale file"));
                     continue;
                 }
-                Map<String, Object> values = readFile(file, "lang/" + fileName, problems);
+                Map<String, Object> values = readYaml(file, "lang/" + fileName, problems);
                 if (values != null) {
                     overrides.put(locale, flattenMessages(values, "lang/" + fileName, problems));
                 }
@@ -109,7 +109,8 @@ public final class CoreStateLoader {
         return overrides;
     }
 
-    private Map<String, Object> readFile(Path file, String label, List<Problem> problems) {
+    /** Reads a bounded UTF-8 YAML file into plain maps, recording problems instead of throwing. */
+    public static Map<String, Object> readYaml(Path file, String label, List<Problem> problems) {
         try {
             if (!Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) {
                 problems.add(new Problem(label, "missing", "file is missing or not a regular file"));

@@ -1,0 +1,17 @@
+# Variables used by menus. Scopes:
+#   session            one open menu; cleared when it closes
+#   online-player      one player while online; cleared on disconnect
+#   persistent-player  one player, saved to data/variables.txt
+#   persistent-global  one value for the server, saved to data/variables.txt
+# Writes outside min/max or max-length are rejected, never clamped.
+variables:
+  - key: example/clicks
+    type: number
+    scope: persistent-player
+    default: 0
+    min: 0
+    max: 1000000
+  - key: example/sound
+    type: boolean
+    scope: online-player
+    default: true

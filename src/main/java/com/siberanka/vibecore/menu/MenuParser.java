@@ -104,7 +104,11 @@ public final class MenuParser {
     private List<Action> chain(String path, Object raw) {
         Result<List<Action>> parsed = LogicParser.actions(path, raw);
         problems.addAll(parsed.problems());
-        return parsed.isAccepted() ? parsed.orThrow() : List.of();
+        if (!parsed.isAccepted()) {
+            return List.of();
+        }
+        problems.addAll(MenuEffect.validate(path, parsed.orThrow()));
+        return parsed.orThrow();
     }
 
     private Condition optionalCondition(String path, Object raw) {
