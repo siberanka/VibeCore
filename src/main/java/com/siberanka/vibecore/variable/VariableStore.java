@@ -165,6 +165,77 @@ public final class VariableStore {
         return Result.accepted(definition.defaultValue());
     }
 
+    /** One staged change; a null value resets the variable to its default. */
+    public record Write(Identifier key, VariableContext context, VariableValue value) {
+        public Write {
+            Objects.requireNonNull(key, "key");
+            Objects.requireNonNull(context, "context");
+        }
+    }
+
+    /**
+     * Applies every write or none of them. All writes are validated, including
+     * the per-player limit after the whole batch, before anything changes.
+     */
+    public synchronized Result<Integer> applyAll(List<Write> writes) {
+        List<Problem> problems = new ArrayList<>();
+        Map<Slot, VariableValue> staged = new java.util.LinkedHashMap<>();
+        for (Write write : writes) {
+            VariableDefinition definition = definitions.get(write.key());
+            if (definition == null) {
+                problems.add(new Problem(write.key().toString(), "unknown-variable", "no such variable"));
+                continue;
+            }
+            Result<VariableContext> valid = write.context().require(definition.scope(), write.key().toString());
+            problems.addAll(valid.problems());
+            if (write.value() != null) {
+                problems.addAll(definition.check(write.value()).problems());
+            }
+            if (valid.isAccepted()) {
+                staged.put(slot(definition, write.context()), write.value());
+            }
+        }
+        Map<UUID, Integer> counts = new HashMap<>(perPlayerCount);
+        staged.forEach((slot, value) -> {
+            if (slot.subject() == null) {
+                return;
+            }
+            boolean present = values.containsKey(slot);
+            if (value != null && !present) {
+                counts.merge(slot.subject(), 1, Integer::sum);
+            } else if (value == null && present) {
+                counts.merge(slot.subject(), -1, Integer::sum);
+            }
+        });
+        counts.forEach((subject, count) -> {
+            if (count > maxValuesPerPlayer && count > perPlayerCount.getOrDefault(subject, 0)) {
+                problems.add(new Problem(subject.toString(), "limit",
+                        "player would exceed " + maxValuesPerPlayer + " stored values"));
+            }
+        });
+        if (!problems.isEmpty()) {
+            return Result.rejected(problems);
+        }
+        staged.forEach((slot, value) -> {
+            if (value == null) {
+                values.remove(slot);
+            } else {
+                values.put(slot, value);
+            }
+            if (definitions.get(slot.key()).scope().persistent()) {
+                persistentDirty = true;
+            }
+        });
+        counts.forEach((subject, count) -> {
+            if (count > 0) {
+                perPlayerCount.put(subject, count);
+            } else {
+                perPlayerCount.remove(subject);
+            }
+        });
+        return Result.accepted(staged.size());
+    }
+
     private synchronized void remove(Slot slot) {
         if (values.remove(slot) != null && slot.subject() != null) {
             perPlayerCount.computeIfPresent(slot.subject(), (subject, count) -> count > 1 ? count - 1 : null);

@@ -17,6 +17,7 @@ VibeCore is a single Paper plugin built as one Java module. Feature areas are se
 | `command` | `/vibecore` command with per-subcommand permissions and permission-aware help and completion. |
 | `project` | Namespaced identifiers, project types, project headers and a gap-free schema migration chain that rejects newer schemas. |
 | `variable` | Typed variables (number, boolean, text) with session, online-player, persistent-player and persistent-global scopes, bounds and strict parsing. `VariableStore` keeps per-subject values, clears session and online values on close and disconnect, enforces a per-player limit and persists the persistent scopes in a deterministic format that preserves entries of removed definitions. |
+| `logic` | Typed conditions (compare, all, any, not, chance) and action chains (set, add, toggle, reset, if, fail, emit) parsed from YAML trees with path-qualified errors. `LogicEngine` runs chains fail-fast against staged variable writes and commits them all or none, within step and nesting budgets; effects are returned for the caller to perform after the commit. |
 | `pack.registry` | Persistent numeric identity allocation for glyphs and model data with tombstones, reservations and a deterministic text format. |
 
 ## Rules for new modules

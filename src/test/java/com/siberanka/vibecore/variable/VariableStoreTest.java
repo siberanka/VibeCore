@@ -121,6 +121,27 @@ class VariableStoreTest {
     }
 
     @Test
+    void batchAppliesAllOrNothing() {
+        VariableStore store = VariableStore.create(definitions(), 1).orThrow();
+        VariableContext alice = VariableContext.player(ALICE);
+        var overLimit = store.applyAll(List.of(
+                new VariableStore.Write(key("coins"), alice, VariableValue.number(5)),
+                new VariableStore.Write(key("nick"), alice, VariableValue.text("A"))));
+        assertEquals("limit", overLimit.problems().getFirst().code());
+        assertEquals("0", store.get(key("coins"), alice).orThrow().canonical());
+
+        var invalid = store.applyAll(List.of(
+                new VariableStore.Write(key("coins"), alice, VariableValue.number(5)),
+                new VariableStore.Write(key("tab"), alice, VariableValue.number(1))));
+        assertFalse(invalid.isAccepted(), "a session write without a session rejects the whole batch");
+        assertEquals("0", store.get(key("coins"), alice).orThrow().canonical());
+
+        assertEquals(1, store.applyAll(List.of(new VariableStore.Write(key("coins"), alice,
+                VariableValue.number(5)))).orThrow());
+        assertEquals("5", store.get(key("coins"), alice).orThrow().canonical());
+    }
+
+    @Test
     void duplicateDefinitionsAreRejected() {
         var definition = definitions().getFirst();
         assertFalse(VariableStore.create(List.of(definition, definition), 8).isAccepted());
