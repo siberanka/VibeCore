@@ -21,6 +21,7 @@ import com.siberanka.vibecore.project.Identifier;
 import com.siberanka.vibecore.variable.VariableContext;
 import com.siberanka.vibecore.variable.VariableStore;
 import com.siberanka.vibecore.variable.VariableValue;
+import io.papermc.paper.event.player.AsyncChatEvent;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -46,6 +47,7 @@ import net.kyori.adventure.text.minimessage.tag.Tag;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
@@ -85,6 +87,7 @@ public final class MenuModule implements VibeModule, Listener {
     private final PlaceholderApi placeholders;
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
     private final Map<UUID, MenuSession> sessions = new ConcurrentHashMap<>();
+    private final Map<UUID, PendingInput> inputs = new ConcurrentHashMap<>();
     private final Object saveLock = new Object();
     private final AtomicLong saveSequence = new AtomicLong();
     private long lastWrittenSequence;
@@ -157,6 +160,8 @@ public final class MenuModule implements VibeModule, Listener {
             finish(session, viewer);
         }
         HandlerList.unregisterAll(this);
+        inputs.values().forEach(pending -> tasks.cancel(pending.timeout()));
+        inputs.clear();
         if (saveTask != null) {
             tasks.cancel(saveTask);
             saveTask = null;
@@ -445,6 +450,10 @@ public final class MenuModule implements VibeModule, Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onQuit(PlayerQuitEvent event) {
         UUID viewer = event.getPlayer().getUniqueId();
+        PendingInput pending = inputs.remove(viewer);
+        if (pending != null) {
+            tasks.cancel(pending.timeout());
+        }
         MenuSession session = sessions.get(viewer);
         if (session != null) {
             finish(session, event.getPlayer());
@@ -517,6 +526,11 @@ public final class MenuModule implements VibeModule, Listener {
                     }
                 }
                 case "command" -> runCommand(viewer, session, arguments);
+                case "input" -> {
+                    if (navigation) {
+                        requestInput(viewer, session, arguments);
+                    }
+                }
                 default -> {
                     // refresh: the menu is redrawn after every committed click
                 }
@@ -549,6 +563,78 @@ public final class MenuModule implements VibeModule, Listener {
             plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), line.orThrow());
         } else {
             viewer.performCommand(line.orThrow());
+        }
+    }
+
+    /** A chat answer the viewer owes to a menu. */
+    private record PendingInput(Identifier menu, Identifier variable, BukkitTask timeout) {
+    }
+
+    /**
+     * Closes the menu and waits for one chat message. The message is never
+     * broadcast; it is validated against the variable and the menu reopens.
+     */
+    private void requestInput(Player viewer, MenuSession session, Map<String, String> arguments) {
+        Identifier variable = Identifier.parse("var", arguments.get("var")).orThrow();
+        long timeoutTicks = 20L * (long) Double.parseDouble(arguments.getOrDefault("timeout", "30"));
+        UUID id = viewer.getUniqueId();
+        tasks.runLater(() -> {
+            if (!viewer.isOnline()) {
+                return;
+            }
+            closeIfCurrent(viewer, session);
+            BukkitTask timeout = tasks.runLater(() -> {
+                if (inputs.remove(id) != null && viewer.isOnline()) {
+                    messages.send(viewer, "menu.input-timeout");
+                }
+            }, timeoutTicks);
+            PendingInput previous = inputs.put(id, new PendingInput(session.menu().id(), variable, timeout));
+            if (previous != null) {
+                tasks.cancel(previous.timeout());
+            }
+            viewer.sendMessage(render(arguments.get("prompt"), viewer, null));
+            messages.send(viewer, "menu.input-hint");
+        }, 1);
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onChat(AsyncChatEvent event) {
+        PendingInput pending = inputs.remove(event.getPlayer().getUniqueId());
+        if (pending == null) {
+            return;
+        }
+        event.setCancelled(true);
+        event.viewers().clear();
+        String text = PlainTextComponentSerializer.plainText().serialize(event.message());
+        Player viewer = event.getPlayer();
+        tasks.runOnMain(() -> completeInput(viewer, pending, text));
+    }
+
+    private void completeInput(Player viewer, PendingInput pending, String text) {
+        tasks.cancel(pending.timeout());
+        if (!viewer.isOnline()) {
+            return;
+        }
+        if (text.equalsIgnoreCase("cancel") || text.equalsIgnoreCase("iptal")) {
+            messages.send(viewer, "menu.input-cancelled");
+        } else {
+            Result<VariableValue> stored = text.length() > 256
+                    ? Result.rejected("input", "length", "longer than 256 characters")
+                    : store.definition(pending.variable()).isAccepted()
+                    ? store.definition(pending.variable()).orThrow().parse(text)
+                    : Result.rejected("input", "unknown-variable", "the variable no longer exists");
+            if (stored.isAccepted()) {
+                stored = store.set(pending.variable(), VariableContext.player(viewer.getUniqueId()), stored.orThrow());
+            }
+            if (!stored.isAccepted()) {
+                messages.send(viewer, "menu.input-invalid", "reason", stored.problems().getFirst().detail());
+            }
+        }
+        if (catalog.menu(pending.menu()).isPresent()) {
+            Result<MenuSession> reopened = open(viewer, pending.menu());
+            if (!reopened.isAccepted() && reopened.problems().getFirst().code().equals("no-permission")) {
+                messages.send(viewer, "menu.denied");
+            }
         }
     }
 

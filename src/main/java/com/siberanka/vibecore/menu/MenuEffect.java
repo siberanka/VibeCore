@@ -23,21 +23,23 @@ import java.util.Set;
  * emit: {type: item-take, material: diamond, amount: 3}   # plain items only
  * emit: {type: item-give, material: diamond, amount: 3}
  * emit: {type: command, as: console, run: "give <player> diamond 1"}   # see CommandTemplate
+ * emit: {type: input, var: nick, prompt: "<yellow>Type a name", timeout: 30}   # chat input, then reopen
  * </pre>
  */
 public final class MenuEffect {
 
-    private static final Map<String, Set<String>> ARGUMENTS = Map.of(
-            "message", Set.of("text"),
-            "sound", Set.of("sound", "volume", "pitch"),
-            "open", Set.of("menu"),
-            "close", Set.of(),
-            "refresh", Set.of(),
-            "money-take", Set.of("amount"),
-            "money-give", Set.of("amount"),
-            "item-take", Set.of("material", "amount"),
-            "item-give", Set.of("material", "amount"),
-            "command", Set.of("as", "run"));
+    private static final Map<String, Set<String>> ARGUMENTS = Map.ofEntries(
+            Map.entry("message", Set.of("text")),
+            Map.entry("sound", Set.of("sound", "volume", "pitch")),
+            Map.entry("open", Set.of("menu")),
+            Map.entry("close", Set.of()),
+            Map.entry("refresh", Set.of()),
+            Map.entry("money-take", Set.of("amount")),
+            Map.entry("money-give", Set.of("amount")),
+            Map.entry("item-take", Set.of("material", "amount")),
+            Map.entry("item-give", Set.of("material", "amount")),
+            Map.entry("command", Set.of("as", "run")),
+            Map.entry("input", Set.of("var", "prompt", "timeout")));
 
     /** Effects performed together with the variable changes, all or none. */
     public static final Set<String> TRANSACTIONAL = Set.of("money-take", "money-give", "item-take", "item-give");
@@ -71,7 +73,7 @@ public final class MenuEffect {
         Set<String> allowed = ARGUMENTS.get(emit.type());
         if (allowed == null) {
             problems.add(new Problem(path + ".type", "unknown-effect", "use message, sound, open, close, refresh,"
-                    + " money-take, money-give, item-take, item-give or command"));
+                    + " money-take, money-give, item-take, item-give, command or input"));
             return;
         }
         for (String name : emit.arguments().keySet()) {
@@ -93,6 +95,15 @@ public final class MenuEffect {
                 }
                 range(path + ".volume", arguments.get("volume"), 0, 4, problems);
                 range(path + ".pitch", arguments.get("pitch"), 0.5, 2, problems);
+            }
+            case "input" -> {
+                if (!Identifier.parse(path + ".var", arguments.get("var")).isAccepted()) {
+                    problems.add(new Problem(path + ".var", "format", "expected a variable identifier"));
+                }
+                if (arguments.getOrDefault("prompt", "").isEmpty()) {
+                    problems.add(new Problem(path + ".prompt", "missing", "an input needs a prompt"));
+                }
+                range(path + ".timeout", arguments.getOrDefault("timeout", "30"), 5, 300, problems);
             }
             case "command" -> {
                 if (!Set.of("console", "player").contains(arguments.getOrDefault("as", ""))) {

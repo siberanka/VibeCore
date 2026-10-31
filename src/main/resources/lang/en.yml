@@ -59,3 +59,7 @@ menu:
   not-enough-items: "<red>You need <white><amount> × <material></white> (plain items only).</red>"
   inventory-full: "<red>Your inventory has no room for <white><material></white>.</red>"
   economy-missing: "<red>No economy is available on this server.</red>"
+  input-hint: "<gray>Type your answer in chat; only you see it. Type <white>cancel</white> to stop.</gray>"
+  input-cancelled: "<gray>Input cancelled.</gray>"
+  input-timeout: "<gray>No answer received; input cancelled.</gray>"
+  input-invalid: "<red>That value was not accepted: <reason>.</red>"

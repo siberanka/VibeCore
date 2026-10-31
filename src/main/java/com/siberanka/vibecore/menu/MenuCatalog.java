@@ -142,9 +142,9 @@ public record MenuCatalog(Map<Identifier, MenuDefinition> menus, List<VariableDe
 
     /** Identifiers and keys a menu refers to. */
     private record Refs(Set<Identifier> variables, Set<Identifier> menus, Set<String> materials,
-                        List<CommandTemplate> commands) {
+                        List<CommandTemplate> commands, Set<Identifier> inputs) {
         Refs() {
-            this(new HashSet<>(), new HashSet<>(), new HashSet<>(), new ArrayList<>());
+            this(new HashSet<>(), new HashSet<>(), new HashSet<>(), new ArrayList<>(), new HashSet<>());
         }
     }
 
@@ -169,6 +169,16 @@ public record MenuCatalog(Map<Identifier, MenuDefinition> menus, List<VariableDe
                 problems.add(new Problem(label, "unknown-menu", "opens " + key + ", which is not a valid menu")));
         refs.materials().stream().filter(key -> !materialExists.test(key)).sorted().forEach(key ->
                 problems.add(new Problem(label, "unknown-material", "'" + key + "' is not an item here")));
+        for (Identifier key : refs.inputs()) {
+            VariableDefinition definition = variables.get(key);
+            if (definition == null) {
+                problems.add(new Problem(label, "unknown-variable", key + " is not declared in variables.yml"));
+            } else if (definition.scope() == com.siberanka.vibecore.variable.VariableScope.SESSION
+                    || definition.scope() == com.siberanka.vibecore.variable.VariableScope.PERSISTENT_GLOBAL) {
+                problems.add(new Problem(label, "scope", key
+                        + " must be an online-player or persistent-player variable to receive chat input"));
+            }
+        }
         for (CommandTemplate command : refs.commands()) {
             command.checkAllowed(label, allowedCommands).ifPresent(problems::add);
             for (Identifier key : command.variables()) {
@@ -203,6 +213,8 @@ public record MenuCatalog(Map<Identifier, MenuDefinition> menus, List<VariableDe
                         Identifier.parse("menu", emit.arguments().get("menu")).map(refs.menus()::add);
                     } else if (emit.type().startsWith("item-")) {
                         refs.materials().add(emit.arguments().getOrDefault("material", ""));
+                    } else if (emit.type().equals("input")) {
+                        Identifier.parse("var", emit.arguments().get("var")).map(refs.inputs()::add);
                     } else if (emit.type().equals("command")) {
                         CommandTemplate.parse("run", emit.arguments().get("run")).map(refs.commands()::add);
                     }

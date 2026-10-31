@@ -16,3 +16,8 @@ variables:
     type: boolean
     scope: online-player
     default: true
+  - key: example/nickname
+    type: text
+    scope: persistent-player
+    default: ""
+    max-length: 16

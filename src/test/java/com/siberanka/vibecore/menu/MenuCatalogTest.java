@@ -19,7 +19,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 class MenuCatalogTest {
 
-    private static final Set<String> MATERIALS = Set.of("emerald", "diamond", "note_block", "barrier", "oak_door", "wheat",
+    private static final Set<String> MATERIALS = Set.of("emerald", "diamond", "note_block", "barrier", "oak_door", "wheat", "name_tag",
             "stone");
 
     @TempDir
@@ -54,8 +54,8 @@ class MenuCatalogTest {
         Result<MenuCatalog> catalog = load();
         assertTrue(catalog.isAccepted(), catalog.problems().toString());
         MenuDefinition example = catalog.orThrow().menu(new Identifier("vibecore", "example")).orElseThrow();
-        assertEquals(4, example.items().size());
-        assertEquals(2, catalog.orThrow().variables().size());
+        assertEquals(5, example.items().size());
+        assertEquals(3, catalog.orThrow().variables().size());
     }
 
     @Test
@@ -140,6 +140,43 @@ class MenuCatalogTest {
         var codes = load().problems().stream().map(Problem::code).toList();
         assertTrue(codes.containsAll(java.util.List.of("not-allowed", "type", "format")), codes.toString());
         assertEquals(1, codes.stream().filter("not-allowed"::equals).count(), "give is allowed, eco is not");
+    }
+
+    @Test
+    void chatInputNeedsAPlayerScopedVariable() throws IOException {
+        Files.writeString(dataFolder.resolve("variables.yml"), """
+                variables:
+                  - {key: draft, type: text, scope: session}
+                  - {key: motd, type: text, scope: persistent-global}
+                """, StandardCharsets.UTF_8);
+        Files.delete(dataFolder.resolve("menus/example.yml"));
+        writeMenu("ask.yml", """
+                schema-version: 1
+                title: Ask
+                items:
+                  a:
+                    slot: 0
+                    material: stone
+                    actions:
+                      left:
+                        - emit: {type: input, var: draft, prompt: "Type"}
+                        - emit: {type: input, var: motd, prompt: "Type", timeout: 900}
+                """);
+        var problems = load().problems();
+        assertEquals(1, problems.stream().filter(problem -> problem.code().equals("range")).count(), problems.toString());
+        writeMenu("ask.yml", """
+                schema-version: 1
+                title: Ask
+                items:
+                  a:
+                    slot: 0
+                    material: stone
+                    actions:
+                      left:
+                        - emit: {type: input, var: draft, prompt: "Type"}
+                        - emit: {type: input, var: motd, prompt: "Type"}
+                """);
+        assertEquals(2, load().problems().stream().filter(problem -> problem.code().equals("scope")).count());
     }
 
     @Test

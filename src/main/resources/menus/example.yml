@@ -71,3 +71,12 @@ items:
         - emit: {type: item-take, material: wheat, amount: 8}
         - emit: {type: item-give, material: emerald, amount: 1}
         - emit: {type: message, text: "<green>Traded 8 wheat for 1 emerald."}
+
+  nickname:
+    slot: 4
+    material: name_tag
+    name: "<white>Nickname: <aqua><var:example/nickname>"
+    lore: ["<gray>Click and type a nickname in chat."]
+    actions:
+      left:
+        - emit: {type: input, var: example/nickname, prompt: "<yellow>Type a nickname (up to 16 characters).", timeout: 30}

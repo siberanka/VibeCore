@@ -59,3 +59,7 @@ menu:
   not-enough-items: "<red><white><amount> × <material></white> gerekli (yalnız düz eşyalar sayılır).</red>"
   inventory-full: "<red>Envanterinde <white><material></white> için yer yok.</red>"
   economy-missing: "<red>Bu sunucuda kullanılabilir bir ekonomi yok.</red>"
+  input-hint: "<gray>Cevabını sohbete yaz; yalnız sen görürsün. Vazgeçmek için <white>iptal</white> yaz.</gray>"
+  input-cancelled: "<gray>Giriş iptal edildi.</gray>"
+  input-timeout: "<gray>Cevap gelmedi; giriş iptal edildi.</gray>"
+  input-invalid: "<red>Bu değer kabul edilmedi: <reason>.</red>"
