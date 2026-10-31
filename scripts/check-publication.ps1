@@ -91,7 +91,7 @@ try {
         throw 'No candidate files were found. Stage the intended files, or use -Tracked for a full index check.'
     }
 
-    $blockedPaths = '(?i)(^|/)(?:ai|\.resources|\.reources|\.resource|graphify-out|target|build|run|servers?|backups|world[^/]*)(?:/|$)'
+    $blockedPaths = '(?i)(?:(^|/)(?:ai|\.resources|\.reources|\.resource|graphify-out|target|build|run|servers?|backups)(?:/|$)|^world[^/]*/)'
     $secretPaths = '(?i)(^|/)(?:\.env(?:\..*)?|[^/]*(?:credentials|service-account)[^/]*\.json|[^/]+\.(?:pem|key|p12|pfx|jks|keystore))$'
     $generatedPaths = '(?i)\.(?:class|jar|war|log|bak)$'
     $pipelinePaths = '(?i)(?:^\.github/workflows/|(?:^|/)\.gitlab-ci(?:\.[^/]+)?\.ya?ml$)'
