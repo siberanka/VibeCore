@@ -1,0 +1,40 @@
+# VibeCore mesajları (MiniMessage biçimi).
+# <ad> yer tutucularına giren değerler düz metin olarak eklenir.
+prefix: "<dark_gray>[</dark_gray><gradient:#8b5cf6:#22d3ee>VibeCore</gradient><dark_gray>]</dark_gray> "
+
+command:
+  no-permission: "<red>Bunu yapmak için yetkin yok.</red>"
+  unknown: "<red>Bilinmeyen alt komut.</red> <gray><white>/vibecore help</white> komutunu kullan.</gray>"
+  busy: "<yellow>Arka plan işçileri meşgul. Birazdan tekrar dene.</yellow>"
+
+help:
+  header: "<gradient:#8b5cf6:#22d3ee>VibeCore</gradient> <gray>komutları</gray>"
+  entry: " <white>/vibecore <command></white> <dark_gray>-</dark_gray> <gray><description></gray>"
+  help: "Bu listeyi gösterir"
+  status: "Modül durumlarını gösterir"
+  diagnostics: "Çalışma zamanı tanı bilgisini gösterir"
+  reload: "Yapılandırmayı doğrular ve uygular"
+
+status:
+  header: "<gray>Sürüm <white><version></white> · yapılandırma revizyonu <white><revision></white></gray>"
+  module: " <white><module></white> <dark_gray>»</dark_gray> <state> <dark_gray>(<reason>)</dark_gray>"
+  experimental: " <yellow>deneysel</yellow>"
+  state:
+    enabled: "<green>etkin</green>"
+    disabled: "<gray>kapalı</gray>"
+    not-implemented: "<gold>henüz uygulanmadı</gold>"
+    unsupported: "<yellow>desteklenmiyor</yellow>"
+    failed: "<red>başarısız</red>"
+
+diagnostics:
+  header: "<gray>Tanı bilgisi (sır veya oyuncu verisi içermez)</gray>"
+  entry: " <gray><key>:</gray> <white><value></white>"
+
+reload:
+  started: "<gray>Yapılandırma doğrulanıyor…</gray>"
+  success: "<green>Yapılandırma uygulandı.</green> <gray>Revizyon <white><revision></white>.</gray>"
+  rejected: "<red>Yapılandırma <count> sorun nedeniyle reddedildi.</red> <gray>Önceki yapılandırma etkin kalır.</gray>"
+  problem: " <dark_gray>-</dark_gray> <gray><problem></gray>"
+  more: " <dark_gray>… ve <count> sorun daha sunucu günlüğünde.</dark_gray>"
+  in-progress: "<yellow>Zaten süren bir yeniden yükleme var.</yellow>"
+  restart-required: "<yellow>İşçi ayarları sunucu yeniden başlatılınca değişir.</yellow>"

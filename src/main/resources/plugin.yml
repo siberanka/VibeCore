@@ -1,0 +1,34 @@
+name: VibeCore
+version: '@project.version@'
+main: com.siberanka.vibecore.VibeCorePlugin
+api-version: '@paper.api-version@'
+description: '@project.description@'
+author: siberanka
+
+commands:
+  vibecore:
+    description: VibeCore administration and information.
+    usage: /vibecore help
+    permission: vibecore.command.help
+
+permissions:
+  vibecore.command.help:
+    description: Shows the VibeCore commands the sender may use.
+    default: true
+  vibecore.admin.status:
+    description: Shows the state of every VibeCore module.
+    default: op
+  vibecore.admin.diagnostics:
+    description: Shows redacted runtime diagnostics.
+    default: op
+  vibecore.admin.reload:
+    description: Validates and activates configuration and messages.
+    default: op
+  vibecore.admin:
+    description: Grants the listed administration permissions only.
+    default: op
+    children:
+      vibecore.command.help: true
+      vibecore.admin.status: true
+      vibecore.admin.diagnostics: true
+      vibecore.admin.reload: true

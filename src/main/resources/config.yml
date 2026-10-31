@@ -1,0 +1,30 @@
+# VibeCore configuration.
+# Changes are validated as a whole on /vibecore reload. An invalid file is
+# rejected and the previously active configuration stays in effect.
+
+# Schema version of this file. Do not change it by hand.
+config-version: 1
+
+# Default message language for the console and for players whose client
+# language is not available. Supported: en, tr
+locale: en
+
+# Feature modules. A module reports one of: enabled, disabled,
+# not-implemented, unsupported or failed in /vibecore status.
+modules:
+  menu: false
+  cursor: false
+  hud: false
+  hologram: false
+  badge: false
+  pack: false
+  editor: false
+  bedrock: false
+
+# Background workers for file, media and pack processing.
+# Changes take effect after a server restart.
+workers:
+  # 1 to 16
+  threads: 2
+  # 1 to 4096 pending jobs; further jobs are refused, not queued.
+  queue-capacity: 64

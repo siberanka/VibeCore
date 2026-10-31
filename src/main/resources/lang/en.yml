@@ -1,0 +1,40 @@
+# VibeCore messages (MiniMessage format).
+# Values inside <name> placeholders are inserted as plain text.
+prefix: "<dark_gray>[</dark_gray><gradient:#8b5cf6:#22d3ee>VibeCore</gradient><dark_gray>]</dark_gray> "
+
+command:
+  no-permission: "<red>You do not have permission to do that.</red>"
+  unknown: "<red>Unknown subcommand.</red> <gray>Use <white>/vibecore help</white>.</gray>"
+  busy: "<yellow>Background workers are busy. Try again shortly.</yellow>"
+
+help:
+  header: "<gradient:#8b5cf6:#22d3ee>VibeCore</gradient> <gray>commands</gray>"
+  entry: " <white>/vibecore <command></white> <dark_gray>-</dark_gray> <gray><description></gray>"
+  help: "Show this list"
+  status: "Show module states"
+  diagnostics: "Show runtime diagnostics"
+  reload: "Validate and apply configuration"
+
+status:
+  header: "<gray>Version <white><version></white> · configuration revision <white><revision></white></gray>"
+  module: " <white><module></white> <dark_gray>»</dark_gray> <state> <dark_gray>(<reason>)</dark_gray>"
+  experimental: " <yellow>experimental</yellow>"
+  state:
+    enabled: "<green>enabled</green>"
+    disabled: "<gray>disabled</gray>"
+    not-implemented: "<gold>not implemented</gold>"
+    unsupported: "<yellow>unsupported</yellow>"
+    failed: "<red>failed</red>"
+
+diagnostics:
+  header: "<gray>Diagnostics (no secrets or player data)</gray>"
+  entry: " <gray><key>:</gray> <white><value></white>"
+
+reload:
+  started: "<gray>Validating configuration…</gray>"
+  success: "<green>Configuration applied.</green> <gray>Revision <white><revision></white>.</gray>"
+  rejected: "<red>Configuration rejected with <count> problem(s).</red> <gray>The previous configuration stays active.</gray>"
+  problem: " <dark_gray>-</dark_gray> <gray><problem></gray>"
+  more: " <dark_gray>… and <count> more in the server log.</dark_gray>"
+  in-progress: "<yellow>A reload is already in progress.</yellow>"
+  restart-required: "<yellow>Worker settings change after a restart.</yellow>"

@@ -1,0 +1,29 @@
+VibeCore
+Required Notice: Copyright (c) 2026 siberanka (https://gitlab.com/siberanka/vibecore)
+
+VibeCore, including the Paper plugin and every file in this repository, is licensed under the VibeCore
+License in LICENSE: the PolyForm Noncommercial License 1.0.0 together with additional terms. In short:
+
+- Anyone may build, install, change and run VibeCore on Minecraft servers and networks they run or
+  administer, including ones that earn money.
+- Nobody may sell VibeCore, a copy, a changed version, a fork or a renamed copy of it, or any part of its
+  source code, under the name VibeCore or under any other name.
+- Anyone who copies, quotes or adapts any part of VibeCore, even a single code block, must credit it:
+  "VibeCore by siberanka (https://gitlab.com/siberanka/vibecore)", with a note when it was changed.
+- Copies and changed versions may be shared free of charge, together with LICENSE and this NOTICE.
+
+This summary does not change the license; the full terms are in LICENSE. Any other use needs a separate
+written license from siberanka: https://github.com/siberanka or https://gitlab.com/siberanka.
+
+Third-party components keep their own licenses:
+
+- The plugin JAR bundles no third-party code, fonts, icons, images or other assets.
+- The Paper API, including Adventure and MiniMessage, is provided by the server at runtime, used only to
+  build the plugin and not bundled.
+- JUnit Jupiter (EPL-2.0) and Apache Maven plugins (Apache-2.0) are used only to build and test.
+
+See docs/DEPENDENCIES.md for details.
+
+Names of other projects and products, including Minecraft, Mojang, Microsoft and Paper, belong to their
+owners and only name compatibility targets. VibeCore is not an official Minecraft product and is not
+approved by or associated with Mojang or Microsoft.
