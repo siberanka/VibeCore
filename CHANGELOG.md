@@ -13,6 +13,7 @@
 - Shared model foundations: namespaced identifiers, project headers, schema migration chain, typed and scoped variables, and a persistent glyph and model data identity registry.
 - Variable store with per-player isolation, scope-aware lifecycle clearing, bounded per-player values and lossless persistence of persistent scopes.
 - Condition and action engine: typed comparisons and boolean logic, variable actions, branches and fail gates, all-or-nothing commit of variable changes, step and nesting budgets, and a bounded YAML parser.
+- Inventory menu definitions: title, rows, open permission and condition, open and close actions, items with slots, look, ordered state overrides, visibility and per-click actions, validated as a whole with path-qualified errors.
 - Atomic file replacement and contained path resolution utilities.
 - VibeCore License (PolyForm Noncommercial 1.0.0 with additional terms) and NOTICE, packaged in the JAR.
 - Unit tests for configuration, messages, modules, workers, files, project model, variables and identity registry.
