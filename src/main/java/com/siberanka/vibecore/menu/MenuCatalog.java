@@ -45,7 +45,8 @@ public record MenuCatalog(Map<Identifier, MenuDefinition> menus, List<VariableDe
         return Optional.ofNullable(menus.get(id));
     }
 
-    public static Result<MenuCatalog> load(Path dataFolder, Predicate<String> materialExists) {
+    public static Result<MenuCatalog> load(Path dataFolder, Predicate<String> materialExists,
+                                           Set<String> allowedCommands) {
         List<Problem> problems = new ArrayList<>();
         List<VariableDefinition> variables = loadVariables(dataFolder.resolve("variables.yml"), problems);
         TreeMap<Identifier, MenuDefinition> menus = new TreeMap<>();
@@ -74,10 +75,10 @@ public record MenuCatalog(Map<Identifier, MenuDefinition> menus, List<VariableDe
                 }
             }
         }
-        Set<Identifier> declared = new HashSet<>();
-        variables.forEach(variable -> declared.add(variable.key()));
+        Map<Identifier, VariableDefinition> declared = new java.util.HashMap<>();
+        variables.forEach(variable -> declared.put(variable.key(), variable));
         for (MenuDefinition menu : menus.values()) {
-            checkReferences(menu, declared, menus.keySet(), materialExists, problems);
+            checkReferences(menu, declared, menus.keySet(), materialExists, allowedCommands, problems);
         }
         if (!problems.isEmpty()) {
             return Result.rejected(problems);
@@ -140,14 +141,16 @@ public record MenuCatalog(Map<Identifier, MenuDefinition> menus, List<VariableDe
     }
 
     /** Identifiers and keys a menu refers to. */
-    private record Refs(Set<Identifier> variables, Set<Identifier> menus, Set<String> materials) {
+    private record Refs(Set<Identifier> variables, Set<Identifier> menus, Set<String> materials,
+                        List<CommandTemplate> commands) {
         Refs() {
-            this(new HashSet<>(), new HashSet<>(), new HashSet<>());
+            this(new HashSet<>(), new HashSet<>(), new HashSet<>(), new ArrayList<>());
         }
     }
 
-    private static void checkReferences(MenuDefinition menu, Set<Identifier> variables, Set<Identifier> menus,
-                                        Predicate<String> materialExists, List<Problem> problems) {
+    private static void checkReferences(MenuDefinition menu, Map<Identifier, VariableDefinition> variables,
+                                        Set<Identifier> menus, Predicate<String> materialExists,
+                                        Set<String> allowedCommands, List<Problem> problems) {
         Refs refs = new Refs();
         collect(menu.openCondition(), refs);
         collect(menu.onOpen(), refs);
@@ -160,12 +163,23 @@ public record MenuCatalog(Map<Identifier, MenuDefinition> menus, List<VariableDe
             }
         }
         String label = "menus/" + menu.id().path() + ".yml";
-        refs.variables().stream().filter(key -> !variables.contains(key)).sorted().forEach(key ->
+        refs.variables().stream().filter(key -> !variables.containsKey(key)).sorted().forEach(key ->
                 problems.add(new Problem(label, "unknown-variable", key + " is not declared in variables.yml")));
         refs.menus().stream().filter(key -> !menus.contains(key)).sorted().forEach(key ->
                 problems.add(new Problem(label, "unknown-menu", "opens " + key + ", which is not a valid menu")));
         refs.materials().stream().filter(key -> !materialExists.test(key)).sorted().forEach(key ->
                 problems.add(new Problem(label, "unknown-material", "'" + key + "' is not an item here")));
+        for (CommandTemplate command : refs.commands()) {
+            command.checkAllowed(label, allowedCommands).ifPresent(problems::add);
+            for (Identifier key : command.variables()) {
+                VariableDefinition definition = variables.get(key);
+                if (definition == null) {
+                    problems.add(new Problem(label, "unknown-variable", key + " is not declared in variables.yml"));
+                } else if (definition.type() == com.siberanka.vibecore.variable.VariableType.TEXT) {
+                    problems.add(new Problem(label, "type", key + " is text and cannot be inserted into a command"));
+                }
+            }
+        }
     }
 
     private static void collect(List<Action> chain, Refs refs) {
@@ -189,6 +203,8 @@ public record MenuCatalog(Map<Identifier, MenuDefinition> menus, List<VariableDe
                         Identifier.parse("menu", emit.arguments().get("menu")).map(refs.menus()::add);
                     } else if (emit.type().startsWith("item-")) {
                         refs.materials().add(emit.arguments().getOrDefault("material", ""));
+                    } else if (emit.type().equals("command")) {
+                        CommandTemplate.parse("run", emit.arguments().get("run")).map(refs.commands()::add);
                     }
                 }
                 case Action.Fail ignored -> {

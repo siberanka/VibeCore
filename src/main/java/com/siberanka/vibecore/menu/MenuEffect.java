@@ -22,6 +22,7 @@ import java.util.Set;
  * emit: {type: money-give, amount: 10}
  * emit: {type: item-take, material: diamond, amount: 3}   # plain items only
  * emit: {type: item-give, material: diamond, amount: 3}
+ * emit: {type: command, as: console, run: "give <player> diamond 1"}   # see CommandTemplate
  * </pre>
  */
 public final class MenuEffect {
@@ -35,7 +36,8 @@ public final class MenuEffect {
             "money-take", Set.of("amount"),
             "money-give", Set.of("amount"),
             "item-take", Set.of("material", "amount"),
-            "item-give", Set.of("material", "amount"));
+            "item-give", Set.of("material", "amount"),
+            "command", Set.of("as", "run"));
 
     /** Effects performed together with the variable changes, all or none. */
     public static final Set<String> TRANSACTIONAL = Set.of("money-take", "money-give", "item-take", "item-give");
@@ -69,7 +71,7 @@ public final class MenuEffect {
         Set<String> allowed = ARGUMENTS.get(emit.type());
         if (allowed == null) {
             problems.add(new Problem(path + ".type", "unknown-effect", "use message, sound, open, close, refresh,"
-                    + " money-take, money-give, item-take or item-give"));
+                    + " money-take, money-give, item-take, item-give or command"));
             return;
         }
         for (String name : emit.arguments().keySet()) {
@@ -91,6 +93,12 @@ public final class MenuEffect {
                 }
                 range(path + ".volume", arguments.get("volume"), 0, 4, problems);
                 range(path + ".pitch", arguments.get("pitch"), 0.5, 2, problems);
+            }
+            case "command" -> {
+                if (!Set.of("console", "player").contains(arguments.getOrDefault("as", ""))) {
+                    problems.add(new Problem(path + ".as", "format", "expected console or player"));
+                }
+                problems.addAll(CommandTemplate.parse(path + ".run", arguments.get("run")).problems());
             }
             case "money-take", "money-give" -> {
                 if (LogicParser.parseMoney(arguments.get("amount")) == null) {

@@ -64,6 +64,16 @@ class SettingsParserTest {
     }
 
     @Test
+    void commandAllowListRefusesOperatorCommands() {
+        Map<String, Object> document = valid();
+        document.put("actions", Map.of("allowed-commands", List.of("Give", "eco")));
+        assertEquals(Set.of("give", "eco"), SettingsParser.parse(document).orThrow().allowedCommands());
+
+        document.put("actions", Map.of("allowed-commands", List.of("give", "op", "bad command")));
+        assertEquals(Set.of("forbidden", "format"), codes(SettingsParser.parse(document)));
+    }
+
+    @Test
     void rejectedCandidateKeepsActiveState() {
         CoreSettings first = SettingsParser.parse(valid()).orThrow();
         ActiveState<CoreSettings> state = new ActiveState<>(first);

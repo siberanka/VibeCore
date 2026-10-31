@@ -40,7 +40,7 @@ class MenuCatalogTest {
     }
 
     private Result<MenuCatalog> load() {
-        return MenuCatalog.load(dataFolder, MATERIALS::contains);
+        return MenuCatalog.load(dataFolder, MATERIALS::contains, Set.of("give"));
     }
 
     private void writeMenu(String path, String yaml) throws IOException {
@@ -104,6 +104,42 @@ class MenuCatalogTest {
         var codes = load().problems().stream().map(Problem::code).toList();
         assertTrue(codes.containsAll(java.util.List.of("file-name", "unknown-effect", "format", "range", "missing")),
                 codes.toString());
+    }
+
+    @Test
+    void commandsMustBeAllowedAndUseSafeVariables() throws IOException {
+        Files.writeString(dataFolder.resolve("variables.yml"), """
+                variables:
+                  - {key: nick, type: text, scope: session}
+                  - {key: level, type: number, scope: session}
+                """, StandardCharsets.UTF_8);
+        Files.delete(dataFolder.resolve("menus/example.yml"));
+        writeMenu("rewards.yml", """
+                schema-version: 1
+                title: Rewards
+                items:
+                  a:
+                    slot: 0
+                    material: stone
+                    actions:
+                      left:
+                        - emit: {type: command, as: console, run: "give <player> stone <var:level>"}
+                        - emit: {type: command, as: console, run: "eco give <player> <var:nick>"}
+                """);
+        writeMenu("invalid.yml", """
+                schema-version: 1
+                title: Invalid
+                items:
+                  a:
+                    slot: 0
+                    material: stone
+                    actions:
+                      left:
+                        - emit: {type: command, as: server, run: "give <player> stone"}
+                """);
+        var codes = load().problems().stream().map(Problem::code).toList();
+        assertTrue(codes.containsAll(java.util.List.of("not-allowed", "type", "format")), codes.toString());
+        assertEquals(1, codes.stream().filter("not-allowed"::equals).count(), "give is allowed, eco is not");
     }
 
     @Test

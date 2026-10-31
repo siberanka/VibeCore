@@ -27,10 +27,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.random.RandomGenerator;
 import net.kyori.adventure.text.Component;
@@ -70,6 +72,7 @@ public final class MenuModule implements VibeModule, Listener {
     private final TaskTracker tasks;
     private final BoundedWorkers workers;
     private final Messages messages;
+    private final Supplier<Set<String>> allowedCommands;
     private final Path dataFile;
     private final Path ledger;
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
@@ -83,7 +86,9 @@ public final class MenuModule implements VibeModule, Listener {
     private volatile LogicEngine engine;
     private BukkitTask saveTask;
 
-    public MenuModule(JavaPlugin plugin, TaskTracker tasks, BoundedWorkers workers, Messages messages) {
+    public MenuModule(JavaPlugin plugin, TaskTracker tasks, BoundedWorkers workers, Messages messages,
+                      Supplier<Set<String>> allowedCommands) {
+        this.allowedCommands = allowedCommands;
         this.plugin = plugin;
         this.tasks = tasks;
         this.workers = workers;
@@ -109,7 +114,8 @@ public final class MenuModule implements VibeModule, Listener {
 
     @Override
     public void start() throws IOException {
-        Result<MenuCatalog> loaded = MenuCatalog.load(plugin.getDataFolder().toPath(), MenuModule::isItem);
+        Result<MenuCatalog> loaded = MenuCatalog.load(plugin.getDataFolder().toPath(), MenuModule::isItem,
+                allowedCommands.get());
         if (!loaded.isAccepted()) {
             logProblems("Menu files rejected", loaded.problems());
             throw new IllegalStateException("menu files are invalid");
@@ -153,7 +159,8 @@ public final class MenuModule implements VibeModule, Listener {
 
     @Override
     public List<Problem> reload() {
-        Result<MenuCatalog> loaded = MenuCatalog.load(plugin.getDataFolder().toPath(), MenuModule::isItem);
+        Result<MenuCatalog> loaded = MenuCatalog.load(plugin.getDataFolder().toPath(), MenuModule::isItem,
+                allowedCommands.get());
         if (!loaded.isAccepted()) {
             return loaded.problems();
         }
@@ -462,10 +469,39 @@ public final class MenuModule implements VibeModule, Listener {
                         }, 1);
                     }
                 }
+                case "command" -> runCommand(viewer, session, arguments);
                 default -> {
                     // refresh: the menu is redrawn after every committed click
                 }
             }
+        }
+    }
+
+    /**
+     * Runs an owner-written command after the chain committed. Console commands
+     * are logged with the menu and viewer for auditing; player commands run with
+     * the viewer's own permissions only.
+     */
+    private void runCommand(Player viewer, MenuSession session, Map<String, String> arguments) {
+        MenuDefinition menu = session.menu();
+        CommandTemplate template = CommandTemplate.parse("run", arguments.get("run")).orThrow();
+        if (!allowedCommands.get().contains(template.root())) {
+            plugin.getLogger().warning("Menu " + menu.id() + " tried to run '" + template.root()
+                    + "', which is no longer allowed");
+            return;
+        }
+        VariableContext context = VariableContext.session(viewer.getUniqueId(), session.id());
+        Result<String> line = template.render(viewer.getName(), viewer.getUniqueId(), key -> store.get(key, context));
+        if (!line.isAccepted()) {
+            logProblems("Command in " + menu.id() + " was not run", line.problems());
+            return;
+        }
+        if ("console".equals(arguments.get("as"))) {
+            plugin.getLogger().info("Menu " + menu.id() + " runs console command for " + viewer.getName() + ": "
+                    + line.orThrow());
+            plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), line.orThrow());
+        } else {
+            viewer.performCommand(line.orThrow());
         }
     }
 

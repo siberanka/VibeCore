@@ -68,7 +68,8 @@ public final class VibeCorePlugin extends JavaPlugin {
         tasks = new TaskTracker(this);
         modules = new ModuleRegistry(getLogger());
         messages = new Messages(this::catalog, () -> state.get().settings().defaultLocale());
-        modules.register(new MenuModule(this, tasks, workers, messages));
+        modules.register(new MenuModule(this, tasks, workers, messages,
+                () -> state.get().settings().allowedCommands()));
         modules.apply(state.get().settings().enabledModules());
         diagnostics = new Diagnostics(getPluginMeta().getVersion(), getServer(), state, modules, workers, tasks);
 

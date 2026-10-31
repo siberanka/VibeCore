@@ -28,3 +28,9 @@ workers:
   threads: 2
   # 1 to 4096 pending jobs; further jobs are refused, not queued.
   queue-capacity: 64
+
+# Menu command actions. A menu may only run commands whose name is listed
+# here, for example [give, eco]. Commands that change operator status or
+# stop or reload the server are always refused.
+actions:
+  allowed-commands: []
