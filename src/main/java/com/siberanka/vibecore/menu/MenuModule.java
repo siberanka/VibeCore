@@ -17,6 +17,7 @@ import com.siberanka.vibecore.logic.Facts;
 import com.siberanka.vibecore.logic.LogicEngine;
 import com.siberanka.vibecore.logic.Outcome;
 import com.siberanka.vibecore.logic.SideEffects;
+import com.siberanka.vibecore.pack.GlyphIndex;
 import com.siberanka.vibecore.project.Identifier;
 import com.siberanka.vibecore.variable.VariableContext;
 import com.siberanka.vibecore.variable.VariableStore;
@@ -82,6 +83,7 @@ public final class MenuModule implements VibeModule, Listener {
     private final BoundedWorkers workers;
     private final Messages messages;
     private final Supplier<Set<String>> allowedCommands;
+    private final GlyphIndex glyphs;
     private final Path dataFile;
     private final Path ledger;
     private final PlaceholderApi placeholders;
@@ -98,8 +100,9 @@ public final class MenuModule implements VibeModule, Listener {
     private BukkitTask saveTask;
 
     public MenuModule(JavaPlugin plugin, TaskTracker tasks, BoundedWorkers workers, Messages messages,
-                      Supplier<Set<String>> allowedCommands) {
+                      Supplier<Set<String>> allowedCommands, GlyphIndex glyphs) {
         this.allowedCommands = allowedCommands;
+        this.glyphs = glyphs;
         this.plugin = plugin;
         this.tasks = tasks;
         this.workers = workers;
@@ -294,7 +297,9 @@ public final class MenuModule implements VibeModule, Listener {
             String text = placeholders.expand(viewer, identifier.toString()).orElse("");
             return Tag.inserting(LegacyComponentSerializer.legacySection().deserialize(text));
         });
-        return miniMessage.deserialize(template, variables, data, papi,
+        TagResolver glyph = TagResolver.resolver("glyph", (arguments, ignored) -> Tag.selfClosingInserting(
+                glyphs.component(arguments.hasNext() ? arguments.pop().value() : "").orElse(Component.empty())));
+        return miniMessage.deserialize(template, variables, data, papi, glyph,
                 Placeholder.unparsed("player", viewer.getName()));
     }
 

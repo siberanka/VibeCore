@@ -15,6 +15,7 @@ help:
   diagnostics: "Show runtime diagnostics"
   reload: "Validate and apply configuration"
   menu: "Open, close and list menus"
+  pack: "Build the resource pack and show its status"
 
 status:
   header: "<gray>Version <white><version></white> · configuration revision <white><revision></white></gray>"
@@ -63,3 +64,12 @@ menu:
   input-cancelled: "<gray>Input cancelled.</gray>"
   input-timeout: "<gray>No answer received; input cancelled.</gray>"
   input-invalid: "<red>That value was not accepted: <reason>.</red>"
+
+pack:
+  disabled: "<red>The pack module is not enabled.</red>"
+  usage: "<gray>Usage: <white>/vibecore pack status</white> or <white>build</white></gray>"
+  building: "<gray>Building the resource pack…</gray>"
+  built: "<green>Resource pack built.</green> <gray>SHA-1 <white><hash></white>, <white><size></white> bytes, <white><glyphs></white> glyph(s), <white><items></white> item model(s).</gray>"
+  rejected: "<red>Resource pack not built: <count> problem(s).</red> <gray>The previous pack stays in place.</gray>"
+  status: "<gray>Pack SHA-1 <white><hash></white> · <white><size></white> bytes · <white><glyphs></white> glyph(s) · <white><items></white> item model(s) · built <white><time></white></gray>"
+  none: "<gray>No resource pack has been built yet.</gray>"

@@ -25,7 +25,8 @@ VibeCore is a modular Paper plugin for server interfaces and visual content: inv
 | Cursor screens, HUDs and pop-ups | Planned |
 | Holograms, slides and motion | Planned |
 | Rank badges and pixel tools | Planned |
-| Java and Bedrock resource packs | Planned |
+| Java resource pack: glyphs and item models built deterministically from `assets/` | Implemented, unit tested; not yet checked in a client |
+| Pack delivery to players, Bedrock pack | Planned |
 | Visual editor and deployment | Planned |
 | Bedrock access through an optional bridge | Planned |
 
@@ -58,6 +59,8 @@ The plugin JAR is written to `target/`.
 | `/vibecore menu open <menu> <player>` | `vibecore.menu.open.others` | operators |
 | `/vibecore menu close [player]` | `vibecore.menu.close.others` for other players | operators |
 | `/vibecore menu list` | `vibecore.menu.list` | operators |
+| `/vibecore pack status` | `vibecore.pack.status` | operators |
+| `/vibecore pack build` | `vibecore.pack.build` | operators |
 
 `vibecore.admin` grants exactly the administration permissions listed above. Help and tab completion show only the commands the sender may use.
 
@@ -78,6 +81,20 @@ Enable the module with `modules.menu: true` in `config.yml`. Menus are YAML file
 - `cooldown: {var: daily, seconds: 86400, fail: "<red>Wait <remaining>"}` blocks a chain until the period since the time stored in a number variable has passed; the variable's scope makes it per session, per player or global.
 - Shop effects `money-take`, `money-give`, `item-take` and `item-give` and the conditions `has-money`, `has-item` and `has-permission` work in any chain. Money needs Vault and an economy plugin. Only plain items are counted and taken, so a named or enchanted item is never consumed. Takes run before gives within one snapshot; if any step or the variable changes fail, the earlier steps are reverted, and a revert that fails is recorded in `data/transactions.log`.
 - `/vibecore reload` validates every menu and variable file together; an invalid file keeps the previous menus in effect.
+
+## Resource pack
+
+Enable the module with `modules.pack: true`. Declare content in `plugins/VibeCore/assets/pack.yml` and put PNG files in `assets/images/`:
+
+```yaml
+schema-version: 1
+glyphs:
+  coin: {image: coin.png, height: 8, ascent: 7}
+items:
+  ruby: {texture: ruby.png}
+```
+
+`/vibecore pack build` validates every file and writes `packs/vibecore-java.zip` with its SHA-1 for Java Edition 1.21.4 (pack format 46). Glyphs form their own font `vibecore:glyphs`, so no existing font is replaced; menus show them with `<glyph:coin>`. Items become `model: vibecore:ruby`. The same input always produces the same file. A glyph keeps its character across builds, and a removed glyph's character is never handed to another one. A failed build keeps the previous pack. Images are limited to 1 MiB, and glyph images to 256×256.
 
 ## Development
 
@@ -119,7 +136,8 @@ VibeCore; envanter menüleri, imleçle kullanılan ekranlar, HUD ve açılır bi
 | İmleç ekranları, HUD ve açılır bildirimler | Planlandı |
 | Hologramlar, slaytlar ve hareket | Planlandı |
 | Rütbe rozetleri ve piksel araçları | Planlandı |
-| Java ve Bedrock kaynak paketleri | Planlandı |
+| Java kaynak paketi: `assets/` klasöründen deterministik üretilen glyph ve item modelleri | Uygulandı, birim testleri var; henüz istemcide denenmedi |
+| Paketin oyunculara dağıtımı, Bedrock paketi | Planlandı |
 | Görsel editör ve dağıtım | Planlandı |
 | İsteğe bağlı köprüyle Bedrock erişimi | Planlandı |
 
@@ -147,6 +165,10 @@ Sunucuda Paper 1.21.4 veya daha yeni bir sürüm ve Java 25 gerekir. Derlemek i�
 - `cooldown: {var: daily, seconds: 86400, fail: "<red>Bekle: <remaining>"}` sayı değişkeninde tutulan zamandan bu yana süre dolana kadar zinciri durdurur; değişkenin kapsamı bekleme süresini oturum, oyuncu veya sunucu geneli yapar.
 - Mağaza efektleri `money-take`, `money-give`, `item-take`, `item-give` ve koşullar `has-money`, `has-item`, `has-permission` her zincirde kullanılabilir. Para için Vault ve bir ekonomi eklentisi gerekir. Yalnız düz eşyalar sayılır ve alınır; isimli veya büyülü bir eşya asla tüketilmez. Alımlar verilmeden önce aynı anlık görüntüde yapılır; bir adım veya değişken değişiklikleri başarısız olursa önceki adımlar geri alınır, geri alınamayan işlem `data/transactions.log` dosyasına yazılır.
 - `/vibecore reload` bütün menü ve değişken dosyalarını birlikte doğrular; hatalı dosya önceki menüleri etkin bırakır.
+
+### Kaynak paketi
+
+`modules.pack: true` ile açılır. İçerik `plugins/VibeCore/assets/pack.yml` dosyasında tanımlanır, PNG dosyaları `assets/images/` klasörüne konur. `/vibecore pack build` bütün dosyaları doğrular ve Java Edition 1.21.4 için (paket biçimi 46) `packs/vibecore-java.zip` dosyasını SHA-1 değeriyle yazar. Glyph'ler kendi `vibecore:glyphs` fontunu oluşturur, mevcut hiçbir font ezilmez; menüler bunları `<glyph:coin>` ile gösterir. Item'lar `model: vibecore:ruby` olur. Aynı girdi her zaman aynı dosyayı üretir; bir glyph karakterini korur ve silinen glyph'in karakteri başka birine verilmez. Başarısız derleme önceki paketi yerinde bırakır.
 
 ### Lisans
 

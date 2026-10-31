@@ -26,7 +26,8 @@ public final class VibeCoreCommand implements TabExecutor {
         STATUS("status", "vibecore.admin.status"),
         DIAGNOSTICS("diagnostics", "vibecore.admin.diagnostics"),
         RELOAD("reload", "vibecore.admin.reload"),
-        MENU("menu", "vibecore.menu.open");
+        MENU("menu", "vibecore.menu.open"),
+        PACK("pack", "vibecore.pack.status");
 
         private final String label;
         private final String permission;
@@ -49,11 +50,13 @@ public final class VibeCoreCommand implements TabExecutor {
     private final VibeCorePlugin plugin;
     private final Messages messages;
     private final MenuCommand menus;
+    private final PackCommand packs;
 
     public VibeCoreCommand(VibeCorePlugin plugin, Messages messages) {
         this.plugin = plugin;
         this.messages = messages;
         this.menus = new MenuCommand(plugin, messages);
+        this.packs = new PackCommand(plugin, messages);
     }
 
     @Override
@@ -74,6 +77,7 @@ public final class VibeCoreCommand implements TabExecutor {
             case DIAGNOSTICS -> diagnostics(sender);
             case RELOAD -> plugin.reload(sender);
             case MENU -> menus.execute(sender, Arrays.copyOfRange(args, 1, args.length));
+            case PACK -> packs.execute(sender, Arrays.copyOfRange(args, 1, args.length));
         }
         return true;
     }
@@ -117,6 +121,9 @@ public final class VibeCoreCommand implements TabExecutor {
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
         if (args.length > 1 && args[0].equalsIgnoreCase("menu") && sender.hasPermission(Subcommand.MENU.permission)) {
             return menus.complete(sender, Arrays.copyOfRange(args, 1, args.length));
+        }
+        if (args.length > 1 && args[0].equalsIgnoreCase("pack") && sender.hasPermission(Subcommand.PACK.permission)) {
+            return packs.complete(sender, Arrays.copyOfRange(args, 1, args.length));
         }
         if (args.length != 1) {
             return List.of();

@@ -37,6 +37,12 @@ permissions:
   vibecore.menu.list:
     description: Lists the loaded menus.
     default: op
+  vibecore.pack.status:
+    description: Shows the resource pack status.
+    default: op
+  vibecore.pack.build:
+    description: Builds the resource pack.
+    default: op
   vibecore.admin:
     description: Grants the listed administration permissions only.
     default: op
@@ -49,3 +55,5 @@ permissions:
       vibecore.menu.open.others: true
       vibecore.menu.close.others: true
       vibecore.menu.list: true
+      vibecore.pack.status: true
+      vibecore.pack.build: true

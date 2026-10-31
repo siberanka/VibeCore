@@ -15,6 +15,8 @@ import com.siberanka.vibecore.core.text.Messages;
 import com.siberanka.vibecore.core.validation.Problem;
 import com.siberanka.vibecore.core.validation.Result;
 import com.siberanka.vibecore.menu.MenuModule;
+import com.siberanka.vibecore.pack.GlyphIndex;
+import com.siberanka.vibecore.pack.PackModule;
 import java.io.File;
 import java.util.List;
 import java.util.Objects;
@@ -68,8 +70,10 @@ public final class VibeCorePlugin extends JavaPlugin {
         tasks = new TaskTracker(this);
         modules = new ModuleRegistry(getLogger());
         messages = new Messages(this::catalog, () -> state.get().settings().defaultLocale());
+        GlyphIndex glyphs = new GlyphIndex();
         modules.register(new MenuModule(this, tasks, workers, messages,
-                () -> state.get().settings().allowedCommands()));
+                () -> state.get().settings().allowedCommands(), glyphs));
+        modules.register(new PackModule(this, tasks, workers, glyphs));
         modules.apply(state.get().settings().enabledModules());
         diagnostics = new Diagnostics(getPluginMeta().getVersion(), getServer(), state, modules, workers, tasks);
 

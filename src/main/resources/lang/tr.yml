@@ -15,6 +15,7 @@ help:
   diagnostics: "Çalışma zamanı tanı bilgisini gösterir"
   reload: "Yapılandırmayı doğrular ve uygular"
   menu: "Menüleri açar, kapatır ve listeler"
+  pack: "Kaynak paketini oluşturur ve durumunu gösterir"
 
 status:
   header: "<gray>Sürüm <white><version></white> · yapılandırma revizyonu <white><revision></white></gray>"
@@ -63,3 +64,12 @@ menu:
   input-cancelled: "<gray>Giriş iptal edildi.</gray>"
   input-timeout: "<gray>Cevap gelmedi; giriş iptal edildi.</gray>"
   input-invalid: "<red>Bu değer kabul edilmedi: <reason>.</red>"
+
+pack:
+  disabled: "<red>Paket modülü etkin değil.</red>"
+  usage: "<gray>Kullanım: <white>/vibecore pack status</white> veya <white>build</white></gray>"
+  building: "<gray>Kaynak paketi oluşturuluyor…</gray>"
+  built: "<green>Kaynak paketi oluşturuldu.</green> <gray>SHA-1 <white><hash></white>, <white><size></white> bayt, <white><glyphs></white> glyph, <white><items></white> item modeli.</gray>"
+  rejected: "<red>Kaynak paketi oluşturulmadı: <count> sorun.</red> <gray>Önceki paket yerinde kalır.</gray>"
+  status: "<gray>Paket SHA-1 <white><hash></white> · <white><size></white> bayt · <white><glyphs></white> glyph · <white><items></white> item modeli · oluşturma <white><time></white></gray>"
+  none: "<gray>Henüz kaynak paketi oluşturulmadı.</gray>"
