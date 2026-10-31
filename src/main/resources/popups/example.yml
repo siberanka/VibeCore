@@ -1,0 +1,6 @@
+# Example popup: /vibecore popup example <player>
+schema-version: 1
+surface: title
+text: "<gradient:#8b5cf6:#22d3ee>VibeCore</gradient>"
+subtitle: "<gray>Hello, <white><player></white>!"
+seconds: 3

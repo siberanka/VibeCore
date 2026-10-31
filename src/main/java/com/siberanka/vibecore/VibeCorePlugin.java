@@ -14,6 +14,7 @@ import com.siberanka.vibecore.core.text.MessageCatalog;
 import com.siberanka.vibecore.core.text.Messages;
 import com.siberanka.vibecore.core.validation.Problem;
 import com.siberanka.vibecore.core.validation.Result;
+import com.siberanka.vibecore.hud.HudModule;
 import com.siberanka.vibecore.integration.placeholder.PlaceholderApi;
 import com.siberanka.vibecore.menu.MenuModule;
 import com.siberanka.vibecore.pack.GlyphIndex;
@@ -52,7 +53,8 @@ public final class VibeCorePlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        for (String resource : List.of("variables.yml", "menus/example.yml")) {
+        for (String resource : List.of("variables.yml", "menus/example.yml", "huds/example.yml",
+                "popups/example.yml")) {
             if (!new File(getDataFolder(), resource).exists()) {
                 saveResource(resource, false);
             }
@@ -83,6 +85,7 @@ public final class VibeCorePlugin extends JavaPlugin {
         ViewerText text = new ViewerText(variables, glyphs, new PlaceholderApi(getServer()));
         ModuleContext context = new ModuleContext(this, tasks, workers, messages, variables, text, glyphs);
         modules.register(new MenuModule(context, () -> state.get().settings().allowedCommands()));
+        modules.register(new HudModule(context));
         modules.register(new PackModule(this, tasks, workers, glyphs, messages,
                 () -> state.get().settings().packDelivery()));
         modules.apply(state.get().settings().enabledModules());

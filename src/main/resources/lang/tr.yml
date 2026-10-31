@@ -16,6 +16,8 @@ help:
   reload: "Yapılandırmayı doğrular ve uygular"
   menu: "Menüleri açar, kapatır ve listeler"
   pack: "Kaynak paketini oluşturur ve durumunu gösterir"
+  hud: "HUD gösterir, gizler veya sıfırlar"
+  popup: "Oyunculara popup gönderir"
 
 status:
   header: "<gray>Sürüm <white><version></white> · yapılandırma revizyonu <white><revision></white></gray>"
@@ -80,3 +82,17 @@ pack:
   not-loaded: "<yellow>Kaynak paketi yüklenmedi; bazı simgeler farklı görünebilir.</yellow>"
   kick: "<red>Bu sunucu kaynak paketini gerektirir. Sunucu kaynak paketlerine izin verip tekrar katıl.</red>"
   delivery: "<gray>Çevrimiçi oyuncuların paket yanıtları: <white><counts></white></gray>"
+
+hud:
+  disabled: "<red>HUD modülü etkin değil.</red>"
+  usage: "<gray>Kullanım: <white>/vibecore hud show [hud] [oyuncu]</white>, <white>hide</white>, <white>reset</white> veya <white>who [oyuncu]</white></gray>"
+  unknown: "<red>Bilinmeyen HUD: <white><hud></white>.</red>"
+  shown: "<gray><white><player></white> için <white><hud></white> sıfırlanana kadar gösteriliyor.</gray>"
+  hidden: "<gray><white><player></white> için HUD sıfırlanana kadar gizlendi.</gray>"
+  reset: "<gray><white><player></white> oyuncusunun HUD seçimi yeniden koşullara bağlı.</gray>"
+  who: "<gray><white><player></white> şu HUD'u görüyor: <white><hud></white> (<reason>).</gray>"
+
+popup:
+  usage: "<gray>Kullanım: <white>/vibecore popup [popup] [oyuncu|*]</white></gray>"
+  unknown: "<red>Bilinmeyen popup: <white><popup></white>.</red>"
+  queued: "<gray>Popup <white><count></white> oyuncu için sıraya alındı; <white><full></white> sıra doluydu.</gray>"

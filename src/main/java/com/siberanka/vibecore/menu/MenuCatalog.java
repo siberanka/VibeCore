@@ -1,17 +1,13 @@
 package com.siberanka.vibecore.menu;
 
-import com.siberanka.vibecore.core.config.CoreStateLoader;
 import com.siberanka.vibecore.core.validation.Problem;
 import com.siberanka.vibecore.core.validation.Result;
 import com.siberanka.vibecore.logic.Action;
 import com.siberanka.vibecore.logic.Condition;
 import com.siberanka.vibecore.logic.Operand;
+import com.siberanka.vibecore.project.DefinitionFiles;
 import com.siberanka.vibecore.project.Identifier;
 import com.siberanka.vibecore.variable.VariableDefinition;
-import java.io.IOException;
-import java.nio.file.FileVisitOption;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -22,7 +18,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 /**
  * Every menu of the data folder, validated together and against the declared
@@ -33,8 +28,6 @@ import java.util.stream.Stream;
  * {@code vibecore:shop/main}. Variables are declared in {@code variables.yml}.
  */
 public record MenuCatalog(Map<Identifier, MenuDefinition> menus) {
-
-    public static final int MAX_MENU_FILES = 256;
 
     public MenuCatalog {
         menus = Map.copyOf(menus);
@@ -49,29 +42,11 @@ public record MenuCatalog(Map<Identifier, MenuDefinition> menus) {
                                            Map<Identifier, VariableDefinition> variables) {
         List<Problem> problems = new ArrayList<>();
         TreeMap<Identifier, MenuDefinition> menus = new TreeMap<>();
-        Path root = dataFolder.resolve("menus");
-        if (Files.isDirectory(root, LinkOption.NOFOLLOW_LINKS)) {
-            for (Path file : menuFiles(root, problems)) {
-                String relative = root.relativize(file).toString().replace('\\', '/');
-                String label = "menus/" + relative;
-                Result<Identifier> id = Identifier.parse(label,
-                        relative.substring(0, relative.length() - ".yml".length()));
-                if (!id.isAccepted()) {
-                    problems.add(new Problem(label, "file-name",
-                            "menu file names must be lower-case [a-z0-9_.-] segments"));
-                    continue;
-                }
-                Map<String, Object> document = CoreStateLoader.readYaml(file, label, problems);
-                if (document == null) {
-                    continue;
-                }
-                Result<MenuDefinition> menu = MenuParser.parse(id.orThrow(), document, materialExists);
-                for (Problem problem : menu.problems()) {
-                    problems.add(new Problem(label + ": " + problem.path(), problem.code(), problem.detail()));
-                }
-                if (menu.isAccepted()) {
-                    menus.put(id.orThrow(), menu.orThrow());
-                }
+        for (var entry : DefinitionFiles.read(dataFolder.resolve("menus"), "menus", problems).entrySet()) {
+            Result<MenuDefinition> menu = MenuParser.parse(entry.getKey(), entry.getValue(), materialExists);
+            problems.addAll(DefinitionFiles.label("menus", entry.getKey(), menu.problems()));
+            if (menu.isAccepted()) {
+                menus.put(entry.getKey(), menu.orThrow());
             }
         }
         for (MenuDefinition menu : menus.values()) {
@@ -81,22 +56,6 @@ public record MenuCatalog(Map<Identifier, MenuDefinition> menus) {
             return Result.rejected(problems);
         }
         return Result.accepted(new MenuCatalog(menus));
-    }
-
-    private static List<Path> menuFiles(Path root, List<Problem> problems) {
-        try (Stream<Path> walk = Files.walk(root, 4, new FileVisitOption[0])) {
-            List<Path> files = walk.filter(path -> path.getFileName().toString().endsWith(".yml"))
-                    .filter(path -> Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
-                    .sorted().limit(MAX_MENU_FILES + 1L).toList();
-            if (files.size() > MAX_MENU_FILES) {
-                problems.add(new Problem("menus", "size-limit", "more than " + MAX_MENU_FILES + " menu files"));
-                return List.of();
-            }
-            return files;
-        } catch (IOException | RuntimeException failure) {
-            problems.add(new Problem("menus", "unreadable", "menu folder could not be listed"));
-            return List.of();
-        }
     }
 
     /** Identifiers and keys a menu refers to. */

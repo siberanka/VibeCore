@@ -27,7 +27,9 @@ public final class VibeCoreCommand implements TabExecutor {
         DIAGNOSTICS("diagnostics", "vibecore.admin.diagnostics"),
         RELOAD("reload", "vibecore.admin.reload"),
         MENU("menu", "vibecore.menu.open"),
-        PACK("pack", "vibecore.pack.status");
+        PACK("pack", "vibecore.pack.status"),
+        HUD("hud", "vibecore.hud"),
+        POPUP("popup", "vibecore.popup");
 
         private final String label;
         private final String permission;
@@ -51,12 +53,14 @@ public final class VibeCoreCommand implements TabExecutor {
     private final Messages messages;
     private final MenuCommand menus;
     private final PackCommand packs;
+    private final HudCommand huds;
 
     public VibeCoreCommand(VibeCorePlugin plugin, Messages messages) {
         this.plugin = plugin;
         this.messages = messages;
         this.menus = new MenuCommand(plugin, messages);
         this.packs = new PackCommand(plugin, messages);
+        this.huds = new HudCommand(plugin, messages);
     }
 
     @Override
@@ -78,6 +82,8 @@ public final class VibeCoreCommand implements TabExecutor {
             case RELOAD -> plugin.reload(sender);
             case MENU -> menus.execute(sender, Arrays.copyOfRange(args, 1, args.length));
             case PACK -> packs.execute(sender, Arrays.copyOfRange(args, 1, args.length));
+            case HUD -> huds.hud(sender, Arrays.copyOfRange(args, 1, args.length));
+            case POPUP -> huds.popup(sender, Arrays.copyOfRange(args, 1, args.length));
         }
         return true;
     }
@@ -124,6 +130,12 @@ public final class VibeCoreCommand implements TabExecutor {
         }
         if (args.length > 1 && args[0].equalsIgnoreCase("pack") && sender.hasPermission(Subcommand.PACK.permission)) {
             return packs.complete(sender, Arrays.copyOfRange(args, 1, args.length));
+        }
+        if (args.length > 1 && args[0].equalsIgnoreCase("hud") && sender.hasPermission(Subcommand.HUD.permission)) {
+            return huds.completeHud(sender, Arrays.copyOfRange(args, 1, args.length));
+        }
+        if (args.length > 1 && args[0].equalsIgnoreCase("popup") && sender.hasPermission(Subcommand.POPUP.permission)) {
+            return huds.completePopup(sender, Arrays.copyOfRange(args, 1, args.length));
         }
         if (args.length != 1) {
             return List.of();

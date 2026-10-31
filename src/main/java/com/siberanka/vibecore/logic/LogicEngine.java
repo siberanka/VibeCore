@@ -118,6 +118,17 @@ public final class LogicEngine {
         }
     }
 
+    /** Resolves an operand for display, such as a progress bar value. */
+    public Result<VariableValue> value(Operand operand, VariableContext context, Facts facts) {
+        Run run = new Run(context, Limits.DEFAULT, facts);
+        try {
+            return Result.accepted(run.resolve(operand));
+        } catch (Stop stop) {
+            return Result.rejected(stop.problems.isEmpty()
+                    ? List.of(new Problem("operand", "failed", String.valueOf(stop.reason))) : stop.problems);
+        }
+    }
+
     private static final class Stop extends RuntimeException {
         private final String reason;
         private final List<Problem> problems;
@@ -193,7 +204,7 @@ public final class LogicEngine {
             staged.put(key, new Staged(value));
         }
 
-        private VariableValue resolve(Operand operand) {
+        VariableValue resolve(Operand operand) {
             return switch (operand) {
                 case Operand.Literal literal -> literal.value();
                 case Operand.Variable variable -> read(variable.key());

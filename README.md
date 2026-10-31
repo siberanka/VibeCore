@@ -22,7 +22,8 @@ VibeCore is a modular Paper plugin for server interfaces and visual content: inv
 | Inventory menus: YAML menus with states, visibility, click actions and protected sessions | Implemented, unit tested; not yet run on a live server |
 | Shop actions: money through Vault, plain-item take and give, affordability conditions, reverting transactions | Implemented, unit tested; not yet run on a live server |
 | Command actions, paginated and generated shops | Planned |
-| Cursor screens, HUDs and pop-ups | Planned |
+| HUDs on the action bar and boss bar with conditions and priorities, manual override, popups | Implemented, unit tested; not yet run on a live server |
+| Cursor screens | Planned |
 | Holograms, slides and motion | Planned |
 | Rank badges and pixel tools | Planned |
 | Java resource pack: glyphs and item models built deterministically from `assets/` | Implemented, unit tested; not yet checked in a client |
@@ -60,6 +61,8 @@ The plugin JAR is written to `target/`.
 | `/vibecore menu open <menu> <player>` | `vibecore.menu.open.others` | operators |
 | `/vibecore menu close [player]` | `vibecore.menu.close.others` for other players | operators |
 | `/vibecore menu list` | `vibecore.menu.list` | operators |
+| `/vibecore hud show <hud>`, `hide`, `reset`, `who` | `vibecore.hud`; others need `vibecore.hud.others` | everyone / operators |
+| `/vibecore popup <popup> <player>`, `<popup> *` | `vibecore.popup`, `vibecore.popup.all` | operators |
 | `/vibecore pack status` | `vibecore.pack.status` | operators |
 | `/vibecore pack build` | `vibecore.pack.build` | operators |
 | `/vibecore pack send [player]`, `send *` | `vibecore.pack.send`, `vibecore.pack.send.all` | operators |
@@ -83,6 +86,15 @@ Enable the module with `modules.menu: true` in `config.yml`. Menus are YAML file
 - `cooldown: {var: daily, seconds: 86400, fail: "<red>Wait <remaining>"}` blocks a chain until the period since the time stored in a number variable has passed; the variable's scope makes it per session, per player or global.
 - Shop effects `money-take`, `money-give`, `item-take` and `item-give` and the conditions `has-money`, `has-item` and `has-permission` work in any chain. Money needs Vault and an economy plugin. Only plain items are counted and taken, so a named or enchanted item is never consumed. Takes run before gives within one snapshot; if any step or the variable changes fail, the earlier steps are reverted, and a revert that fails is recorded in `data/transactions.log`.
 - `/vibecore reload` validates every menu and variable file together; an invalid file keeps the previous menus in effect.
+
+## HUDs and popups
+
+Enable the module with `modules.hud: true`. HUDs are YAML files in `huds/` and popups in `popups/`; the bundled examples show both.
+
+- Each player sees the first HUD, by highest `priority` and then name, whose `when` condition holds. Conditions and text use the same variables, data, PlaceholderAPI and glyph tags as menus.
+- A HUD has an `actionbar` text, a `bossbar` (text, colour, overlay and progress as `value`/`max`) or both, refreshed every `refresh-ticks` (5 to 200). Text is only re-sent when it changed or the action bar is about to fade.
+- `/vibecore hud show <hud>`, `hide`, `reset` and `who` change or explain a player's HUD until they leave; acting on others needs `vibecore.hud.others`.
+- `/vibecore popup <popup> <player|*>` queues a title or action-bar popup for 0.5 to 600 seconds. Each player has a queue of 8; an action-bar popup takes the action bar while it is shown.
 
 ## Resource pack
 
@@ -137,7 +149,8 @@ VibeCore; envanter menüleri, imleçle kullanılan ekranlar, HUD ve açılır bi
 | Envanter menüleri: durumlar, görünürlük, tıklama eylemleri ve korumalı oturumlarla YAML menüler | Uygulandı, birim testleri var; henüz canlı sunucuda çalıştırılmadı |
 | Mağaza eylemleri: Vault ile para, düz eşya alma/verme, alım gücü koşulları, geri alınan işlemler | Uygulandı, birim testleri var; henüz canlı sunucuda çalıştırılmadı |
 | Komut eylemleri, sayfalı ve üretilen mağazalar | Planlandı |
-| İmleç ekranları, HUD ve açılır bildirimler | Planlandı |
+| Koşul ve önceliğe göre actionbar ve bossbar HUD'ları, elle seçim, popup'lar | Uygulandı, birim testleri var; henüz canlı sunucuda çalıştırılmadı |
+| İmleç ekranları | Planlandı |
 | Hologramlar, slaytlar ve hareket | Planlandı |
 | Rütbe rozetleri ve piksel araçları | Planlandı |
 | Java kaynak paketi: `assets/` klasöründen deterministik üretilen glyph ve item modelleri | Uygulandı, birim testleri var; henüz istemcide denenmedi |
@@ -170,6 +183,10 @@ Sunucuda Paper 1.21.4 veya daha yeni bir sürüm ve Java 25 gerekir. Derlemek i�
 - `cooldown: {var: daily, seconds: 86400, fail: "<red>Bekle: <remaining>"}` sayı değişkeninde tutulan zamandan bu yana süre dolana kadar zinciri durdurur; değişkenin kapsamı bekleme süresini oturum, oyuncu veya sunucu geneli yapar.
 - Mağaza efektleri `money-take`, `money-give`, `item-take`, `item-give` ve koşullar `has-money`, `has-item`, `has-permission` her zincirde kullanılabilir. Para için Vault ve bir ekonomi eklentisi gerekir. Yalnız düz eşyalar sayılır ve alınır; isimli veya büyülü bir eşya asla tüketilmez. Alımlar verilmeden önce aynı anlık görüntüde yapılır; bir adım veya değişken değişiklikleri başarısız olursa önceki adımlar geri alınır, geri alınamayan işlem `data/transactions.log` dosyasına yazılır.
 - `/vibecore reload` bütün menü ve değişken dosyalarını birlikte doğrular; hatalı dosya önceki menüleri etkin bırakır.
+
+### HUD ve popup'lar
+
+`modules.hud: true` ile açılır. HUD'lar `huds/`, popup'lar `popups/` klasöründeki YAML dosyalarıdır. Her oyuncu, en yüksek `priority` ve sonra ada göre `when` koşulu tutan ilk HUD'u görür; HUD actionbar metni, bossbar (metin, renk, görünüm ve `value`/`max` ilerlemesi) ya da ikisini birden içerir ve `refresh-ticks` aralığıyla yenilenir. `/vibecore hud show|hide|reset|who` oyuncu çıkana kadar seçimi değiştirir veya açıklar. `/vibecore popup <popup> <oyuncu|*>` 0,5–600 saniyelik başlık veya actionbar popup'ını oyuncu başına 8'lik sıraya ekler.
 
 ### Kaynak paketi
 

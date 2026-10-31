@@ -134,7 +134,7 @@ public final class LogicParser {
                     return null;
                 }
                 Identifier key = variable(at + ".var", fields.get("var"));
-                Operand value = operand(at + ".value", fields.get("value"));
+                Operand value = operandOf(at + ".value", fields.get("value"));
                 return key != null && value != null ? new Action.SetVariable(key, value) : null;
             }
             case "add" -> {
@@ -280,7 +280,14 @@ public final class LogicParser {
         return text;
     }
 
-    private Operand operand(String path, Object raw) {
+    /** Parses a literal, {var: key} or {data: name} operand. */
+    public static Result<Operand> operand(String path, Object raw) {
+        LogicParser parser = new LogicParser();
+        Operand operand = parser.operandOf(path, raw);
+        return parser.problems.isEmpty() && operand != null ? Result.accepted(operand) : Result.rejected(parser.problems);
+    }
+
+    private Operand operandOf(String path, Object raw) {
         if (raw instanceof Map<?, ?> map) {
             if (map.size() == 1 && map.containsKey("var")) {
                 Identifier key = variable(path + ".var", map.get("var"));
@@ -325,8 +332,8 @@ public final class LogicParser {
                 if (fields == null) {
                     return null;
                 }
-                Operand left = operand(at + ".left", fields.get("left"));
-                Operand right = operand(at + ".right", fields.get("right"));
+                Operand left = operandOf(at + ".left", fields.get("left"));
+                Operand right = operandOf(at + ".right", fields.get("right"));
                 Condition.Comparison comparison = fields.get("op") instanceof String symbol
                         ? Condition.Comparison.fromSymbol(symbol) : null;
                 if (comparison == null) {

@@ -1,0 +1,12 @@
+# Example HUD: shown to every player while the hud module is enabled.
+# The first HUD (highest priority) whose "when" condition holds is shown.
+schema-version: 1
+priority: 0
+refresh-ticks: 20
+actionbar: "<red>❤ <white><data:health></white><gray>/<data:max-health>  <gold>🍖 <white><data:food>"
+bossbar:
+  text: "<gray>Example clicks: <white><var:example/clicks>"
+  color: purple
+  overlay: notched_10
+  value: {var: example/clicks}
+  max: 100

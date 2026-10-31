@@ -49,6 +49,18 @@ permissions:
   vibecore.pack.send.all:
     description: Offers the resource pack to every online player.
     default: op
+  vibecore.hud:
+    description: Shows, hides, resets and inspects your own HUD.
+    default: true
+  vibecore.hud.others:
+    description: Changes or inspects the HUD of other players.
+    default: op
+  vibecore.popup:
+    description: Sends a popup to one player.
+    default: op
+  vibecore.popup.all:
+    description: Sends a popup to every online player.
+    default: op
   vibecore.admin:
     description: Grants the listed administration permissions only.
     default: op
@@ -65,3 +77,7 @@ permissions:
       vibecore.pack.build: true
       vibecore.pack.send: true
       vibecore.pack.send.all: true
+      vibecore.hud: true
+      vibecore.hud.others: true
+      vibecore.popup: true
+      vibecore.popup.all: true

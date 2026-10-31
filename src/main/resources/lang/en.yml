@@ -16,6 +16,8 @@ help:
   reload: "Validate and apply configuration"
   menu: "Open, close and list menus"
   pack: "Build the resource pack and show its status"
+  hud: "Show, hide or reset a HUD"
+  popup: "Send a popup to players"
 
 status:
   header: "<gray>Version <white><version></white> · configuration revision <white><revision></white></gray>"
@@ -80,3 +82,17 @@ pack:
   not-loaded: "<yellow>The resource pack was not loaded; some icons may look different.</yellow>"
   kick: "<red>This server needs its resource pack. Allow server resource packs and join again.</red>"
   delivery: "<gray>Pack responses of online players: <white><counts></white></gray>"
+
+hud:
+  disabled: "<red>The HUD module is not enabled.</red>"
+  usage: "<gray>Usage: <white>/vibecore hud show [hud] [player]</white>, <white>hide</white>, <white>reset</white> or <white>who [player]</white></gray>"
+  unknown: "<red>Unknown HUD <white><hud></white>.</red>"
+  shown: "<gray>Showing <white><hud></white> to <white><player></white> until reset.</gray>"
+  hidden: "<gray>HUD hidden for <white><player></white> until reset.</gray>"
+  reset: "<gray>HUD of <white><player></white> follows its conditions again.</gray>"
+  who: "<gray><white><player></white> sees <white><hud></white> (<reason>).</gray>"
+
+popup:
+  usage: "<gray>Usage: <white>/vibecore popup [popup] [player|*]</white></gray>"
+  unknown: "<red>Unknown popup <white><popup></white>.</red>"
+  queued: "<gray>Popup queued for <white><count></white> player(s); <white><full></white> queue(s) were full.</gray>"
