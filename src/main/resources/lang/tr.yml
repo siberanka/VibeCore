@@ -67,9 +67,16 @@ menu:
 
 pack:
   disabled: "<red>Paket modülü etkin değil.</red>"
-  usage: "<gray>Kullanım: <white>/vibecore pack status</white> veya <white>build</white></gray>"
+  usage: "<gray>Kullanım: <white>/vibecore pack status</white>, <white>build</white> veya <white>send [oyuncu|*]</white></gray>"
   building: "<gray>Kaynak paketi oluşturuluyor…</gray>"
   built: "<green>Kaynak paketi oluşturuldu.</green> <gray>SHA-1 <white><hash></white>, <white><size></white> bayt, <white><glyphs></white> glyph, <white><items></white> item modeli.</gray>"
   rejected: "<red>Kaynak paketi oluşturulmadı: <count> sorun.</red> <gray>Önceki paket yerinde kalır.</gray>"
   status: "<gray>Paket SHA-1 <white><hash></white> · <white><size></white> bayt · <white><glyphs></white> glyph · <white><items></white> item modeli · oluşturma <white><time></white></gray>"
   none: "<gray>Henüz kaynak paketi oluşturulmadı.</gray>"
+  prompt: "<gray>Bu sunucu menüleri ve simgeleri için VibeCore kaynaklarını kullanır.</gray>"
+  offered: "<gray>Kaynak paketi <white><count></white> oyuncuya sunuldu.</gray>"
+  no-build: "<red>Henüz kaynak paketi oluşturulmadı.</red>"
+  no-url: "<red>Önce config.yml içindeki pack.url değerini yüklenen paketin HTTPS adresi yap.</red>"
+  not-loaded: "<yellow>Kaynak paketi yüklenmedi; bazı simgeler farklı görünebilir.</yellow>"
+  kick: "<red>Bu sunucu kaynak paketini gerektirir. Sunucu kaynak paketlerine izin verip tekrar katıl.</red>"
+  delivery: "<gray>Çevrimiçi oyuncuların paket yanıtları: <white><counts></white></gray>"

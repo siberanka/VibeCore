@@ -74,6 +74,21 @@ class SettingsParserTest {
     }
 
     @Test
+    void packDeliveryNeedsHttpsAndAnExplicitPolicy() {
+        Map<String, Object> document = valid();
+        document.put("pack", Map.of("url", "https://cdn.example.org/vibecore.zip", "send-on-join", true,
+                "on-decline", "kick"));
+        CoreSettings.PackDelivery delivery = SettingsParser.parse(document).orThrow().packDelivery();
+        assertTrue(delivery.sendOnJoin());
+        assertTrue(delivery.kickOnDecline());
+        assertFalse(delivery.required());
+
+        document.put("pack", Map.of("url", "http://insecure.example/pack.zip", "on-decline", "ban"));
+        assertEquals(Set.of("format"), codes(SettingsParser.parse(document)));
+        assertEquals(2, SettingsParser.parse(document).problems().size());
+    }
+
+    @Test
     void rejectedCandidateKeepsActiveState() {
         CoreSettings first = SettingsParser.parse(valid()).orThrow();
         ActiveState<CoreSettings> state = new ActiveState<>(first);

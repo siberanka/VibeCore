@@ -1,25 +1,45 @@
 package com.siberanka.vibecore.pack;
 
+import com.siberanka.vibecore.core.config.CoreSettings;
 import com.siberanka.vibecore.core.io.AtomicFiles;
 import com.siberanka.vibecore.core.module.ModuleId;
 import com.siberanka.vibecore.core.module.VibeModule;
 import com.siberanka.vibecore.core.task.BoundedWorkers;
 import com.siberanka.vibecore.core.task.TaskTracker;
+import com.siberanka.vibecore.core.text.Messages;
 import com.siberanka.vibecore.core.validation.Problem;
 import com.siberanka.vibecore.core.validation.Result;
 import com.siberanka.vibecore.pack.registry.StableIdRegistry;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.logging.Level;
+import net.kyori.adventure.resource.ResourcePackInfo;
+import net.kyori.adventure.resource.ResourcePackRequest;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
@@ -28,7 +48,7 @@ import org.bukkit.plugin.java.JavaPlugin;
  * place; glyph code points are kept in {@code data/glyphs.txt} so they never
  * move between builds.
  */
-public final class PackModule implements VibeModule {
+public final class PackModule implements VibeModule, Listener {
 
     /** Result of the last successful build. */
     public record Build(String sha1, int bytes, int glyphs, int items, Instant builtAt) {
@@ -45,7 +65,19 @@ public final class PackModule implements VibeModule {
     private volatile Build lastBuild;
     private volatile List<Problem> lastProblems = List.of();
 
-    public PackModule(JavaPlugin plugin, TaskTracker tasks, BoundedWorkers workers, GlyphIndex glyphs) {
+    private final Messages messages;
+    private final Supplier<CoreSettings.PackDelivery> delivery;
+    /** Final client answers meaning the pack is not in use. */
+    private static final Set<PlayerResourcePackStatusEvent.Status> NOT_LOADED = EnumSet.of(
+            PlayerResourcePackStatusEvent.Status.DECLINED, PlayerResourcePackStatusEvent.Status.FAILED_DOWNLOAD,
+            PlayerResourcePackStatusEvent.Status.INVALID_URL, PlayerResourcePackStatusEvent.Status.FAILED_RELOAD,
+            PlayerResourcePackStatusEvent.Status.DISCARDED);
+    private final Map<UUID, PlayerResourcePackStatusEvent.Status> statuses = new ConcurrentHashMap<>();
+
+    public PackModule(JavaPlugin plugin, TaskTracker tasks, BoundedWorkers workers, GlyphIndex glyphs,
+                      Messages messages, Supplier<CoreSettings.PackDelivery> delivery) {
+        this.messages = messages;
+        this.delivery = delivery;
         this.plugin = plugin;
         this.tasks = tasks;
         this.workers = workers;
@@ -73,6 +105,7 @@ public final class PackModule implements VibeModule {
         } else {
             registry = StableIdRegistry.glyphs("glyph:vibecore", 0xE000, 0xF8FF);
         }
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
         build(result -> {
             if (!result.isAccepted()) {
                 plugin.getLogger().warning("Resource pack not built:");
@@ -83,7 +116,68 @@ public final class PackModule implements VibeModule {
 
     @Override
     public void stop() {
+        HandlerList.unregisterAll(this);
+        statuses.clear();
         glyphs.update(Map.of());
+    }
+
+    /** Offers the last built pack to a player; the reason is returned when it cannot be offered. */
+    public Result<String> offer(Player player) {
+        Build build = lastBuild;
+        CoreSettings.PackDelivery settings = delivery.get();
+        if (build == null) {
+            return Result.rejected("pack", "no-build", "no pack has been built");
+        }
+        if (settings.url().isEmpty()) {
+            return Result.rejected("pack", "no-url", "pack.url is not set");
+        }
+        ResourcePackInfo info = ResourcePackInfo.resourcePackInfo(PackDelivery.packId(build.sha1()),
+                URI.create(settings.url()), build.sha1());
+        player.sendResourcePacks(ResourcePackRequest.resourcePackRequest().packs(info).replace(false)
+                .required(settings.required()).prompt(messages.render(messages.localeOf(player), "pack.prompt")));
+        statuses.remove(player.getUniqueId());
+        return Result.accepted(build.sha1());
+    }
+
+    /** Number of online players per last reported pack status. */
+    public Map<String, Integer> deliveryCounts() {
+        Map<String, Integer> counts = new TreeMap<>();
+        statuses.values().forEach(status -> counts.merge(status.name().toLowerCase(Locale.ROOT), 1, Integer::sum));
+        return counts;
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onJoin(PlayerJoinEvent event) {
+        if (delivery.get().sendOnJoin() && lastBuild != null && !delivery.get().url().isEmpty()) {
+            Player player = event.getPlayer();
+            tasks.runLater(() -> {
+                if (player.isOnline()) {
+                    offer(player);
+                }
+            }, 20);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onStatus(PlayerResourcePackStatusEvent event) {
+        Build build = lastBuild;
+        if (build == null || !PackDelivery.packId(build.sha1()).equals(event.getID())) {
+            return;
+        }
+        Player player = event.getPlayer();
+        statuses.put(player.getUniqueId(), event.getStatus());
+        if (NOT_LOADED.contains(event.getStatus())) {
+            if (delivery.get().kickOnDecline()) {
+                player.kick(messages.render(messages.localeOf(player), "pack.kick"));
+            } else {
+                messages.send(player, "pack.not-loaded");
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onQuit(PlayerQuitEvent event) {
+        statuses.remove(event.getPlayer().getUniqueId());
     }
 
     @Override

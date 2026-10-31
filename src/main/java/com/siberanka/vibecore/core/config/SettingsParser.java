@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  */
 public final class SettingsParser {
 
-    private static final Set<String> ROOT_KEYS = Set.of("config-version", "locale", "modules", "workers", "actions");
+    private static final Set<String> ROOT_KEYS = Set.of("config-version", "locale", "modules", "workers", "actions", "pack");
     private static final Set<String> WORKER_KEYS = Set.of("threads", "queue-capacity");
 
     private SettingsParser() {
@@ -79,10 +79,23 @@ public final class SettingsParser {
             actions.report("allowed-commands", "type", "expected a list of command names");
         }
 
+        MapReader pack = root.section("pack");
+        pack.rejectUnknownKeys(Set.of("url", "send-on-join", "required", "on-decline"));
+        String url = pack.text("url", "", 512).trim();
+        if (!url.isEmpty() && !url.matches("https://\\S+")) {
+            pack.report("url", "format", "must be an https:// address without spaces");
+        }
+        String onDecline = pack.text("on-decline", "keep", 16);
+        if (!Set.of("keep", "kick").contains(onDecline)) {
+            pack.report("on-decline", "format", "must be keep or kick");
+        }
+        CoreSettings.PackDelivery delivery = new CoreSettings.PackDelivery(url,
+                pack.bool("send-on-join", false), pack.bool("required", false), onDecline.equals("kick"));
+
         if (root.hasProblems()) {
             return Result.rejected(root.problems());
         }
         return Result.accepted(new CoreSettings(version, locale, enabled,
-                new CoreSettings.WorkerSettings(threads, queue), allowedCommands));
+                new CoreSettings.WorkerSettings(threads, queue), allowedCommands, delivery));
     }
 }

@@ -43,6 +43,12 @@ permissions:
   vibecore.pack.build:
     description: Builds the resource pack.
     default: op
+  vibecore.pack.send:
+    description: Offers the resource pack to yourself or another player.
+    default: op
+  vibecore.pack.send.all:
+    description: Offers the resource pack to every online player.
+    default: op
   vibecore.admin:
     description: Grants the listed administration permissions only.
     default: op
@@ -57,3 +63,5 @@ permissions:
       vibecore.menu.list: true
       vibecore.pack.status: true
       vibecore.pack.build: true
+      vibecore.pack.send: true
+      vibecore.pack.send.all: true

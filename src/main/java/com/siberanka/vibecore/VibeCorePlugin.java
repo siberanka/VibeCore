@@ -73,7 +73,8 @@ public final class VibeCorePlugin extends JavaPlugin {
         GlyphIndex glyphs = new GlyphIndex();
         modules.register(new MenuModule(this, tasks, workers, messages,
                 () -> state.get().settings().allowedCommands(), glyphs));
-        modules.register(new PackModule(this, tasks, workers, glyphs));
+        modules.register(new PackModule(this, tasks, workers, glyphs, messages,
+                () -> state.get().settings().packDelivery()));
         modules.apply(state.get().settings().enabledModules());
         diagnostics = new Diagnostics(getPluginMeta().getVersion(), getServer(), state, modules, workers, tasks);
 

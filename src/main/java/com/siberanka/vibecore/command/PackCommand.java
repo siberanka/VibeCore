@@ -7,6 +7,7 @@ import com.siberanka.vibecore.core.validation.Problem;
 import com.siberanka.vibecore.pack.PackModule;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.bukkit.command.CommandSender;
@@ -17,6 +18,8 @@ final class PackCommand {
 
     static final String STATUS = "vibecore.pack.status";
     static final String BUILD = "vibecore.pack.build";
+    static final String SEND = "vibecore.pack.send";
+    static final String SEND_ALL = "vibecore.pack.send.all";
     private static final int PROBLEMS_SHOWN = 8;
 
     private final VibeCorePlugin plugin;
@@ -37,6 +40,7 @@ final class PackCommand {
         switch (action) {
             case "status" -> status(sender, module.get());
             case "build" -> build(sender, module.get());
+            case "send" -> send(sender, module.get(), args);
             default -> messages.send(sender, "pack.usage");
         }
     }
@@ -51,6 +55,47 @@ final class PackCommand {
                         "time", build.builtAt().toString()),
                 () -> messages.send(sender, "pack.none"));
         problems(sender, module.lastProblems());
+        Map<String, Integer> counts = module.deliveryCounts();
+        if (!counts.isEmpty()) {
+            messages.send(sender, "pack.delivery", "counts", counts.toString());
+        }
+    }
+
+    private void send(CommandSender sender, PackModule module, String[] args) {
+        if (!sender.hasPermission(SEND)) {
+            messages.send(sender, "command.no-permission");
+            return;
+        }
+        List<Player> targets;
+        if (args.length > 1 && args[1].equals("*")) {
+            if (!sender.hasPermission(SEND_ALL)) {
+                messages.send(sender, "command.no-permission");
+                return;
+            }
+            targets = List.copyOf(plugin.getServer().getOnlinePlayers());
+        } else if (args.length > 1) {
+            Player player = plugin.getServer().getPlayerExact(args[1]);
+            if (player == null) {
+                messages.send(sender, "menu.player-missing");
+                return;
+            }
+            targets = List.of(player);
+        } else if (sender instanceof Player player) {
+            targets = List.of(player);
+        } else {
+            messages.send(sender, "menu.console-target");
+            return;
+        }
+        int offered = 0;
+        for (Player target : targets) {
+            var result = module.offer(target);
+            if (!result.isAccepted()) {
+                messages.send(sender, "pack." + result.problems().getFirst().code());
+                return;
+            }
+            offered++;
+        }
+        messages.send(sender, "pack.offered", "count", Integer.toString(offered));
     }
 
     private void build(CommandSender sender, PackModule module) {
@@ -85,9 +130,10 @@ final class PackCommand {
         if (args.length != 1) {
             return List.of();
         }
-        return List.of("build", "status").stream()
+        return List.of("build", "send", "status").stream()
                 .filter(action -> action.startsWith(args[0].toLowerCase(Locale.ROOT)))
                 .filter(action -> !action.equals("build") || sender.hasPermission(BUILD))
+                .filter(action -> !action.equals("send") || sender.hasPermission(SEND))
                 .toList();
     }
 }

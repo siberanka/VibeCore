@@ -26,7 +26,8 @@ VibeCore is a modular Paper plugin for server interfaces and visual content: inv
 | Holograms, slides and motion | Planned |
 | Rank badges and pixel tools | Planned |
 | Java resource pack: glyphs and item models built deterministically from `assets/` | Implemented, unit tested; not yet checked in a client |
-| Pack delivery to players, Bedrock pack | Planned |
+| Pack delivery: offer on join or by command, response tracking, keep-or-kick policy | Implemented; not yet checked in a client |
+| Built-in pack hosting, Bedrock pack | Planned |
 | Visual editor and deployment | Planned |
 | Bedrock access through an optional bridge | Planned |
 
@@ -61,6 +62,7 @@ The plugin JAR is written to `target/`.
 | `/vibecore menu list` | `vibecore.menu.list` | operators |
 | `/vibecore pack status` | `vibecore.pack.status` | operators |
 | `/vibecore pack build` | `vibecore.pack.build` | operators |
+| `/vibecore pack send [player]`, `send *` | `vibecore.pack.send`, `vibecore.pack.send.all` | operators |
 
 `vibecore.admin` grants exactly the administration permissions listed above. Help and tab completion show only the commands the sender may use.
 
@@ -95,6 +97,8 @@ items:
 ```
 
 `/vibecore pack build` validates every file and writes `packs/vibecore-java.zip` with its SHA-1 for Java Edition 1.21.4 (pack format 46). Glyphs form their own font `vibecore:glyphs`, so no existing font is replaced; menus show them with `<glyph:coin>`. Items become `model: vibecore:ruby`. The same input always produces the same file. A glyph keeps its character across builds, and a removed glyph's character is never handed to another one. A failed build keeps the previous pack. Images are limited to 1 MiB, and glyph images to 256×256.
+
+To deliver the pack, upload `packs/vibecore-java.zip` after every build to an HTTPS address you control and set `pack.url` in `config.yml`. Clients check the file against the build's SHA-1, so the uploaded file must be the built one. `pack.send-on-join` offers it when players join and `/vibecore pack send [player|*]` offers it on demand. `pack.on-decline` decides whether players who decline or cannot load it stay online (`keep`) or are disconnected (`kick`); a pack is never re-offered in a loop. `/vibecore pack status` shows the responses of online players.
 
 ## Development
 
@@ -137,7 +141,8 @@ VibeCore; envanter menüleri, imleçle kullanılan ekranlar, HUD ve açılır bi
 | Hologramlar, slaytlar ve hareket | Planlandı |
 | Rütbe rozetleri ve piksel araçları | Planlandı |
 | Java kaynak paketi: `assets/` klasöründen deterministik üretilen glyph ve item modelleri | Uygulandı, birim testleri var; henüz istemcide denenmedi |
-| Paketin oyunculara dağıtımı, Bedrock paketi | Planlandı |
+| Paket dağıtımı: girişte veya komutla sunma, yanıt takibi, tut ya da at politikası | Uygulandı; henüz istemcide denenmedi |
+| Dahili paket barındırma, Bedrock paketi | Planlandı |
 | Görsel editör ve dağıtım | Planlandı |
 | İsteğe bağlı köprüyle Bedrock erişimi | Planlandı |
 
@@ -169,6 +174,8 @@ Sunucuda Paper 1.21.4 veya daha yeni bir sürüm ve Java 25 gerekir. Derlemek i�
 ### Kaynak paketi
 
 `modules.pack: true` ile açılır. İçerik `plugins/VibeCore/assets/pack.yml` dosyasında tanımlanır, PNG dosyaları `assets/images/` klasörüne konur. `/vibecore pack build` bütün dosyaları doğrular ve Java Edition 1.21.4 için (paket biçimi 46) `packs/vibecore-java.zip` dosyasını SHA-1 değeriyle yazar. Glyph'ler kendi `vibecore:glyphs` fontunu oluşturur, mevcut hiçbir font ezilmez; menüler bunları `<glyph:coin>` ile gösterir. Item'lar `model: vibecore:ruby` olur. Aynı girdi her zaman aynı dosyayı üretir; bir glyph karakterini korur ve silinen glyph'in karakteri başka birine verilmez. Başarısız derleme önceki paketi yerinde bırakır.
+
+Paketi dağıtmak için her derlemeden sonra `packs/vibecore-java.zip` dosyasını kontrol ettiğin bir HTTPS adresine yükle ve `config.yml` içindeki `pack.url` değerini ayarla; istemci dosyayı derlemenin SHA-1 değeriyle doğrular. `pack.send-on-join` girişte, `/vibecore pack send [oyuncu|*]` istendiğinde sunar. `pack.on-decline` reddeden veya yükleyemeyen oyuncunun kalmasını (`keep`) ya da atılmasını (`kick`) belirler; paket döngü halinde tekrar sunulmaz.
 
 ### Lisans
 

@@ -34,3 +34,15 @@ workers:
 # stop or reload the server are always refused.
 actions:
   allowed-commands: []
+
+# Resource pack delivery (pack module). Upload packs/vibecore-java.zip after
+# every build to an HTTPS address you control and put it here; clients
+# verify the file against the SHA-1 of the build, so the file must match.
+pack:
+  url: ""
+  # Offer the pack when a player joins.
+  send-on-join: false
+  # Ask the client to treat the pack as required.
+  required: false
+  # keep: players who decline stay online. kick: they are disconnected.
+  on-decline: keep
