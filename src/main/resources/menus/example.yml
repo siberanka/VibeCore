@@ -53,3 +53,21 @@ items:
     actions:
       left:
         - emit: {type: close}
+
+  trade:
+    slot: 22
+    material: wheat
+    amount: 8
+    name: "<gold>Trade 8 wheat for 1 emerald"
+    lore:
+      - "<gray>Only plain wheat counts; named or"
+      - "<gray>enchanted items are never taken."
+    states:
+      - when: {not: {has-item: {material: wheat, amount: 8}}}
+        name: "<gray>Trade 8 wheat for 1 emerald"
+        lore: ["<red>You need 8 wheat."]
+    actions:
+      left:
+        - emit: {type: item-take, material: wheat, amount: 8}
+        - emit: {type: item-give, material: emerald, amount: 1}
+        - emit: {type: message, text: "<green>Traded 8 wheat for 1 emerald."}

@@ -19,7 +19,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 class MenuCatalogTest {
 
-    private static final Set<String> MATERIALS = Set.of("emerald", "diamond", "note_block", "barrier", "oak_door",
+    private static final Set<String> MATERIALS = Set.of("emerald", "diamond", "note_block", "barrier", "oak_door", "wheat",
             "stone");
 
     @TempDir
@@ -54,7 +54,7 @@ class MenuCatalogTest {
         Result<MenuCatalog> catalog = load();
         assertTrue(catalog.isAccepted(), catalog.problems().toString());
         MenuDefinition example = catalog.orThrow().menu(new Identifier("vibecore", "example")).orElseThrow();
-        assertEquals(3, example.items().size());
+        assertEquals(4, example.items().size());
         assertEquals(2, catalog.orThrow().variables().size());
     }
 

@@ -56,6 +56,11 @@ public final class Messages {
         return miniMessage.deserialize(catalog.get().template(locale, key), resolver.build());
     }
 
+    /** The raw template of a message in the sender's language. */
+    public String template(CommandSender sender, String key) {
+        return catalog.get().template(localeOf(sender), key);
+    }
+
     /** Sends a prefixed message, for standalone notifications. */
     public void send(CommandSender sender, String key, String... arguments) {
         String locale = localeOf(sender);

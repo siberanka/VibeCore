@@ -44,7 +44,17 @@ public final class LogicEngine {
     }
 
     public Outcome run(List<Action> chain, VariableContext context, Limits limits) {
-        Run run = new Run(context, limits);
+        return run(chain, context, limits, Facts.NONE, SideEffects.NONE);
+    }
+
+    /**
+     * Runs a chain whose conditions may consult {@code facts} and whose external
+     * effects are performed by {@code sideEffects} together with the variable
+     * changes: if either side fails, neither takes effect.
+     */
+    public Outcome run(List<Action> chain, VariableContext context, Limits limits, Facts facts,
+                       SideEffects sideEffects) {
+        Run run = new Run(context, limits, facts);
         try {
             run.actions(chain, 1);
         } catch (Stop stop) {
@@ -52,8 +62,16 @@ public final class LogicEngine {
         }
         List<VariableStore.Write> writes = new ArrayList<>();
         run.staged.forEach((key, value) -> writes.add(new VariableStore.Write(key, context, value.orElse(null))));
+        Result<SideEffects.Undo> performed = sideEffects.perform(run.effects);
+        if (!performed.isAccepted()) {
+            Problem first = performed.problems().getFirst();
+            return first.code().equals(SideEffects.UNMET)
+                    ? new Outcome.Failed(first.detail(), run.steps)
+                    : new Outcome.Rejected(performed.problems(), run.steps);
+        }
         Result<Integer> applied = store.applyAll(writes);
         if (!applied.isAccepted()) {
+            performed.orThrow().undo();
             return new Outcome.Rejected(applied.problems(), run.steps);
         }
         return new Outcome.Committed(run.effects, writes.size(), run.steps);
@@ -61,7 +79,11 @@ public final class LogicEngine {
 
     /** Evaluates a condition without changing anything, for visibility and open checks. */
     public Result<Boolean> test(Condition condition, VariableContext context, Limits limits) {
-        Run run = new Run(context, limits);
+        return test(condition, context, limits, Facts.NONE);
+    }
+
+    public Result<Boolean> test(Condition condition, VariableContext context, Limits limits, Facts facts) {
+        Run run = new Run(context, limits, facts);
         try {
             return Result.accepted(run.condition(condition, 1));
         } catch (Stop stop) {
@@ -101,13 +123,15 @@ public final class LogicEngine {
     private final class Run {
         private final VariableContext context;
         private final Limits limits;
+        private final Facts facts;
         private final Map<Identifier, Staged> staged = new LinkedHashMap<>();
         private final List<Action.Emit> effects = new ArrayList<>();
         private int steps;
 
-        Run(VariableContext context, Limits limits) {
+        Run(VariableContext context, Limits limits, Facts facts) {
             this.context = context;
             this.limits = limits;
+            this.facts = facts;
         }
 
         private void step(int depth) {
@@ -211,6 +235,7 @@ public final class LogicEngine {
                 }
                 case Condition.Not not -> !condition(not.condition(), depth + 1);
                 case Condition.Chance chance -> random.nextDouble() < chance.probability();
+                case Condition.Fact fact -> require(facts.test(fact));
             };
         }
 

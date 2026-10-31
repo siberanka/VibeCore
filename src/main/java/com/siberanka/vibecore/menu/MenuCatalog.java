@@ -77,7 +77,7 @@ public record MenuCatalog(Map<Identifier, MenuDefinition> menus, List<VariableDe
         Set<Identifier> declared = new HashSet<>();
         variables.forEach(variable -> declared.add(variable.key()));
         for (MenuDefinition menu : menus.values()) {
-            checkReferences(menu, declared, menus.keySet(), problems);
+            checkReferences(menu, declared, menus.keySet(), materialExists, problems);
         }
         if (!problems.isEmpty()) {
             return Result.rejected(problems);
@@ -139,45 +139,55 @@ public record MenuCatalog(Map<Identifier, MenuDefinition> menus, List<VariableDe
         return definitions;
     }
 
+    /** Identifiers and keys a menu refers to. */
+    private record Refs(Set<Identifier> variables, Set<Identifier> menus, Set<String> materials) {
+        Refs() {
+            this(new HashSet<>(), new HashSet<>(), new HashSet<>());
+        }
+    }
+
     private static void checkReferences(MenuDefinition menu, Set<Identifier> variables, Set<Identifier> menus,
-                                        List<Problem> problems) {
-        Set<Identifier> used = new HashSet<>();
-        Set<Identifier> opened = new HashSet<>();
-        collect(menu.openCondition(), used);
-        collect(menu.onOpen(), used, opened);
-        collect(menu.onClose(), used, opened);
+                                        Predicate<String> materialExists, List<Problem> problems) {
+        Refs refs = new Refs();
+        collect(menu.openCondition(), refs);
+        collect(menu.onOpen(), refs);
+        collect(menu.onClose(), refs);
         for (MenuItem item : menu.items()) {
-            collect(item.visible(), used);
-            item.states().forEach(state -> collect(state.when(), used));
+            collect(item.visible(), refs);
+            item.states().forEach(state -> collect(state.when(), refs));
             for (ClickChannel channel : EnumSet.allOf(ClickChannel.class)) {
-                collect(item.actionsFor(channel), used, opened);
+                collect(item.actionsFor(channel), refs);
             }
         }
         String label = "menus/" + menu.id().path() + ".yml";
-        used.stream().filter(key -> !variables.contains(key)).sorted().forEach(key ->
+        refs.variables().stream().filter(key -> !variables.contains(key)).sorted().forEach(key ->
                 problems.add(new Problem(label, "unknown-variable", key + " is not declared in variables.yml")));
-        opened.stream().filter(key -> !menus.contains(key)).sorted().forEach(key ->
+        refs.menus().stream().filter(key -> !menus.contains(key)).sorted().forEach(key ->
                 problems.add(new Problem(label, "unknown-menu", "opens " + key + ", which is not a valid menu")));
+        refs.materials().stream().filter(key -> !materialExists.test(key)).sorted().forEach(key ->
+                problems.add(new Problem(label, "unknown-material", "'" + key + "' is not an item here")));
     }
 
-    private static void collect(List<Action> chain, Set<Identifier> variables, Set<Identifier> menus) {
+    private static void collect(List<Action> chain, Refs refs) {
         for (Action action : chain) {
             switch (action) {
                 case Action.SetVariable set -> {
-                    variables.add(set.key());
-                    collect(set.value(), variables);
+                    refs.variables().add(set.key());
+                    collect(set.value(), refs);
                 }
-                case Action.AddVariable add -> variables.add(add.key());
-                case Action.ToggleVariable toggle -> variables.add(toggle.key());
-                case Action.ResetVariable reset -> variables.add(reset.key());
+                case Action.AddVariable add -> refs.variables().add(add.key());
+                case Action.ToggleVariable toggle -> refs.variables().add(toggle.key());
+                case Action.ResetVariable reset -> refs.variables().add(reset.key());
                 case Action.If branch -> {
-                    collect(branch.condition(), variables);
-                    collect(branch.then(), variables, menus);
-                    collect(branch.otherwise(), variables, menus);
+                    collect(branch.condition(), refs);
+                    collect(branch.then(), refs);
+                    collect(branch.otherwise(), refs);
                 }
                 case Action.Emit emit -> {
                     if (emit.type().equals("open")) {
-                        Identifier.parse("menu", emit.arguments().get("menu")).map(menus::add);
+                        Identifier.parse("menu", emit.arguments().get("menu")).map(refs.menus()::add);
+                    } else if (emit.type().startsWith("item-")) {
+                        refs.materials().add(emit.arguments().getOrDefault("material", ""));
                     }
                 }
                 case Action.Fail ignored -> {
@@ -186,26 +196,31 @@ public record MenuCatalog(Map<Identifier, MenuDefinition> menus, List<VariableDe
         }
     }
 
-    private static void collect(Condition condition, Set<Identifier> variables) {
+    private static void collect(Condition condition, Refs refs) {
         if (condition == null) {
             return;
         }
         switch (condition) {
             case Condition.Compare compare -> {
-                collect(compare.left(), variables);
-                collect(compare.right(), variables);
+                collect(compare.left(), refs);
+                collect(compare.right(), refs);
             }
-            case Condition.All all -> all.conditions().forEach(child -> collect(child, variables));
-            case Condition.Any any -> any.conditions().forEach(child -> collect(child, variables));
-            case Condition.Not not -> collect(not.condition(), variables);
+            case Condition.All all -> all.conditions().forEach(child -> collect(child, refs));
+            case Condition.Any any -> any.conditions().forEach(child -> collect(child, refs));
+            case Condition.Not not -> collect(not.condition(), refs);
+            case Condition.Fact fact -> {
+                if (fact.type().equals("item")) {
+                    refs.materials().add(fact.arguments().get("material"));
+                }
+            }
             case Condition.Chance ignored -> {
             }
         }
     }
 
-    private static void collect(Operand operand, Set<Identifier> variables) {
+    private static void collect(Operand operand, Refs refs) {
         if (operand instanceof Operand.Variable variable) {
-            variables.add(variable.key());
+            refs.variables().add(variable.key());
         }
     }
 }

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.siberanka.vibecore.core.validation.Problem;
+import com.siberanka.vibecore.core.validation.Result;
 import com.siberanka.vibecore.project.Identifier;
 import com.siberanka.vibecore.variable.VariableContext;
 import com.siberanka.vibecore.variable.VariableDefinition;
@@ -147,6 +148,71 @@ class LogicEngineTest {
                 Map.of("not", Map.of("compare", Map.of("left", Map.of("var", "vip"), "op", "==", "right", true))))))
                 .orThrow();
         assertTrue(engine.test(any, CONTEXT, LogicEngine.Limits.DEFAULT).orThrow());
+    }
+
+    private static Map<String, Object> purchase() {
+        return Map.of("if", Map.of(
+                "condition", Map.of("has-money", 5),
+                "then", List.of(
+                        Map.of("add", Map.of("var", "gems", "amount", 1)),
+                        Map.of("emit", Map.of("type", "money-take", "amount", 5))),
+                "else", List.of(Map.of("fail", "poor"))));
+    }
+
+    @Test
+    void factsDecideConditions() {
+        Facts rich = fact -> Result.accepted(fact.type().equals("money"));
+        Outcome outcome = engine.run(parse(List.of(purchase())), CONTEXT, LogicEngine.Limits.DEFAULT, rich,
+                SideEffects.NONE);
+        assertInstanceOf(Outcome.Committed.class, outcome);
+        assertEquals("1", value("gems"));
+
+        Outcome withoutFacts = engine.run(parse(List.of(purchase())), CONTEXT, LogicEngine.Limits.DEFAULT);
+        assertEquals("unsupported-fact",
+                assertInstanceOf(Outcome.Rejected.class, withoutFacts).problems().getFirst().code());
+    }
+
+    @Test
+    void unmetSideEffectFailsWithoutVariableChanges() {
+        Facts rich = fact -> Result.accepted(true);
+        SideEffects broke = effects -> Result.rejected(
+                "transaction", SideEffects.UNMET, "<red>You need 5 more");
+        Outcome outcome = engine.run(parse(List.of(purchase())), CONTEXT, LogicEngine.Limits.DEFAULT, rich, broke);
+        assertEquals("<red>You need 5 more", assertInstanceOf(Outcome.Failed.class, outcome).reason());
+        assertEquals("0", value("gems"));
+    }
+
+    @Test
+    void failedVariableCommitRevertsSideEffects() {
+        List<String> ledger = new ArrayList<>();
+        Facts rich = fact -> Result.accepted(true);
+        SideEffects recording = effects -> {
+            ledger.add("withdraw");
+            return Result.accepted(() -> ledger.add("refund"));
+        };
+        List<Action> chain = parse(List.of(
+                Map.of("emit", Map.of("type", "money-take", "amount", 5)),
+                Map.of("set", Map.of("var", "gems", "value", 100))));
+        // The player already holds the one value allowed, so applying the new gems value fails at commit.
+        VariableStore full = VariableStore.create(List.of(VariableDefinition.read(Map.of("key", "gems",
+                "type", "number", "scope", "persistent-player", "min", 0, "max", 100)).orThrow(),
+                VariableDefinition.read(Map.of("key", "coins", "type", "number", "scope", "persistent-player",
+                        "min", 0, "max", 100)).orThrow()), 1).orThrow();
+        full.set(key("coins"), CONTEXT, VariableValue.number(1)).orThrow();
+        Outcome rejected = new LogicEngine(full, fixedRandom(0.5)).run(chain, CONTEXT, LogicEngine.Limits.DEFAULT,
+                rich, recording);
+        assertEquals("limit", assertInstanceOf(Outcome.Rejected.class, rejected).problems().getFirst().code());
+        assertEquals(List.of("withdraw", "refund"), ledger, "the withdrawal is refunded when variables fail");
+    }
+
+    @Test
+    void parsesFactConditions() {
+        assertTrue(LogicParser.condition("c", Map.of("has-item", Map.of("material", "diamond", "amount", 3)))
+                .isAccepted());
+        assertTrue(LogicParser.condition("c", Map.of("has-permission", "shop.vip")).isAccepted());
+        assertEquals("range", LogicParser.condition("c", Map.of("has-money", -1)).problems().getFirst().code());
+        assertEquals("range", LogicParser.condition("c", Map.of("has-money", "1.005")).problems().getFirst().code());
+        assertFalse(LogicParser.condition("c", Map.of("has-item", Map.of("material", "Diamond"))).isAccepted());
     }
 
     @Test

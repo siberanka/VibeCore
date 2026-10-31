@@ -20,7 +20,8 @@ VibeCore is a modular Paper plugin for server interfaces and visual content: inv
 | Shared model: identifiers, schema migrations, typed and scoped variables with a variable store, persistent glyph and model data registry | Implemented, unit tested |
 | Condition and action engine: comparisons, branches, fail gates, variable actions with all-or-nothing commit | Implemented, unit tested |
 | Inventory menus: YAML menus with states, visibility, click actions and protected sessions | Implemented, unit tested; not yet run on a live server |
-| Shops, economy, item and command actions | Planned |
+| Shop actions: money through Vault, plain-item take and give, affordability conditions, reverting transactions | Implemented, unit tested; not yet run on a live server |
+| Command actions, paginated and generated shops | Planned |
 | Cursor screens, HUDs and pop-ups | Planned |
 | Holograms, slides and motion | Planned |
 | Rank badges and pixel tools | Planned |
@@ -70,6 +71,7 @@ Enable the module with `modules.menu: true` in `config.yml`. Menus are YAML file
 - The menu permission is checked again on every click, and each action chain re-checks its own conditions. Variable changes of a chain are saved all or none.
 - Clicks are debounced per session, and a click is ignored while the previous one is still running.
 - Close actions run exactly once and cannot reopen a menu.
+- Shop effects `money-take`, `money-give`, `item-take` and `item-give` and the conditions `has-money`, `has-item` and `has-permission` work in any chain. Money needs Vault and an economy plugin. Only plain items are counted and taken, so a named or enchanted item is never consumed. Takes run before gives within one snapshot; if any step or the variable changes fail, the earlier steps are reverted, and a revert that fails is recorded in `data/transactions.log`.
 - `/vibecore reload` validates every menu and variable file together; an invalid file keeps the previous menus in effect.
 
 ## Development
@@ -107,7 +109,8 @@ VibeCore; envanter menüleri, imleçle kullanılan ekranlar, HUD ve açılır bi
 | Ortak model: kimlikler, şema geçişleri, tipli ve kapsamlı değişkenler ve değişken deposu, kalıcı glyph ve model verisi kaydı | Uygulandı, birim testleri var |
 | Koşul ve eylem motoru: karşılaştırmalar, dallanma, başarısızlık kapıları, ya hep ya hiç işlenen değişken eylemleri | Uygulandı, birim testleri var |
 | Envanter menüleri: durumlar, görünürlük, tıklama eylemleri ve korumalı oturumlarla YAML menüler | Uygulandı, birim testleri var; henüz canlı sunucuda çalıştırılmadı |
-| Mağazalar, ekonomi, item ve komut eylemleri | Planlandı |
+| Mağaza eylemleri: Vault ile para, düz eşya alma/verme, alım gücü koşulları, geri alınan işlemler | Uygulandı, birim testleri var; henüz canlı sunucuda çalıştırılmadı |
+| Komut eylemleri, sayfalı ve üretilen mağazalar | Planlandı |
 | İmleç ekranları, HUD ve açılır bildirimler | Planlandı |
 | Hologramlar, slaytlar ve hareket | Planlandı |
 | Rütbe rozetleri ve piksel araçları | Planlandı |
@@ -132,6 +135,7 @@ Sunucuda Paper 1.21.4 veya daha yeni bir sürüm ve Java 25 gerekir. Derlemek i�
 - Açık menüdeki her etkileşim iptal edilir: iki envanterdeki tıklamalar, shift ve sayı tuşu taşımaları, çift tıklama, sürükleme, bırakma ve ikinci ele alma. Yalnız görünür bir öğeye yapılan sol, sağ, shift-sol, shift-sağ ve orta tıklama o öğenin eylemlerini çalıştırır.
 - Menü yetkisi her tıklamada yeniden denetlenir; her eylem zinciri kendi koşullarını yeniden kontrol eder ve değişken değişikliklerini ya hep ya hiç kaydeder.
 - Tıklamalar oturum başına sınırlanır; önceki tıklama sürerken yenisi yok sayılır. Kapanış eylemleri tam bir kez çalışır ve menüyü yeniden açamaz.
+- Mağaza efektleri `money-take`, `money-give`, `item-take`, `item-give` ve koşullar `has-money`, `has-item`, `has-permission` her zincirde kullanılabilir. Para için Vault ve bir ekonomi eklentisi gerekir. Yalnız düz eşyalar sayılır ve alınır; isimli veya büyülü bir eşya asla tüketilmez. Alımlar verilmeden önce aynı anlık görüntüde yapılır; bir adım veya değişken değişiklikleri başarısız olursa önceki adımlar geri alınır, geri alınamayan işlem `data/transactions.log` dosyasına yazılır.
 - `/vibecore reload` bütün menü ve değişken dosyalarını birlikte doğrular; hatalı dosya önceki menüleri etkin bırakır.
 
 ### Lisans

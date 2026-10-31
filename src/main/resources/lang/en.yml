@@ -55,3 +55,7 @@ menu:
   list-header: "<gray>Menus: <white><count></white></gray>"
   list-entry: " <white><menu></white> <dark_gray>(<rows> rows)</dark_gray>"
   action-error: "<red>This action could not be completed. The server log has details.</red>"
+  not-enough-money: "<red>You need <white><amount></white> more money.</red>"
+  not-enough-items: "<red>You need <white><amount> × <material></white> (plain items only).</red>"
+  inventory-full: "<red>Your inventory has no room for <white><material></white>.</red>"
+  economy-missing: "<red>No economy is available on this server.</red>"

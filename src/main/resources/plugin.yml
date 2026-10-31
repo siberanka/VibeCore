@@ -4,6 +4,7 @@ main: com.siberanka.vibecore.VibeCorePlugin
 api-version: '@paper.api-version@'
 description: '@project.description@'
 author: siberanka
+softdepend: [Vault]
 
 commands:
   vibecore:

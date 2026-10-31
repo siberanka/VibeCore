@@ -1,11 +1,12 @@
 package com.siberanka.vibecore.logic;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /** Side-effect free check evaluated against the current variable state. */
 public sealed interface Condition permits Condition.Compare, Condition.All, Condition.Any, Condition.Not,
-        Condition.Chance {
+        Condition.Chance, Condition.Fact {
 
     enum Comparison {
         EQUAL("=="), NOT_EQUAL("!="), LESS("<"), LESS_OR_EQUAL("<="), GREATER(">"), GREATER_OR_EQUAL(">=");
@@ -59,6 +60,17 @@ public sealed interface Condition permits Condition.Compare, Condition.All, Cond
     record Not(Condition condition) implements Condition {
         public Not {
             Objects.requireNonNull(condition, "condition");
+        }
+    }
+
+    /**
+     * A fact about the world outside the variable store, such as a balance, an
+     * item count or a permission, answered by the caller's {@link Facts}.
+     */
+    record Fact(String type, Map<String, String> arguments) implements Condition {
+        public Fact {
+            Objects.requireNonNull(type, "type");
+            arguments = Map.copyOf(arguments);
         }
     }
 

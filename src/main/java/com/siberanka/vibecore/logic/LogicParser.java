@@ -4,10 +4,12 @@ import com.siberanka.vibecore.core.validation.Problem;
 import com.siberanka.vibecore.core.validation.Result;
 import com.siberanka.vibecore.project.Identifier;
 import com.siberanka.vibecore.variable.VariableValue;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Reads action chains and conditions from parsed YAML or JSON trees.
@@ -197,6 +199,64 @@ public final class LogicParser {
         }
     }
 
+    /** Largest money amount accepted in a document. */
+    public static final BigDecimal MAX_MONEY = new BigDecimal("1000000000000");
+
+    /**
+     * Parses a positive money amount with at most two decimals, up to
+     * {@link #MAX_MONEY}.
+     *
+     * @return the amount, or null when the value is not such an amount
+     */
+    public static BigDecimal parseMoney(Object raw) {
+        BigDecimal amount;
+        try {
+            amount = raw instanceof Number || raw instanceof String
+                    ? new BigDecimal(String.valueOf(raw).trim()) : null;
+        } catch (NumberFormatException invalid) {
+            return null;
+        }
+        if (amount == null || amount.signum() <= 0 || amount.compareTo(MAX_MONEY) > 0
+                || amount.stripTrailingZeros().scale() > 2) {
+            return null;
+        }
+        return amount.stripTrailingZeros();
+    }
+
+    private String money(String path, Object raw) {
+        BigDecimal amount = parseMoney(raw);
+        if (amount == null) {
+            problems.add(new Problem(path, "range",
+                    "expected a positive amount up to " + MAX_MONEY.toPlainString() + " with at most two decimals"));
+            return null;
+        }
+        return amount.toPlainString();
+    }
+
+    /** Validates {@code {material: key, amount: n}} or a bare material key; amount defaults to 1. */
+    private Map<String, String> item(String path, Object raw) {
+        Object material = raw instanceof Map<?, ?> map ? map.get("material") : raw;
+        Object amount = raw instanceof Map<?, ?> map ? map.get("amount") : null;
+        if (raw instanceof Map<?, ?> map && !Set.of("material", "amount").containsAll(
+                map.keySet().stream().map(String::valueOf).toList())) {
+            problems.add(new Problem(path, "unknown-key", "expected only material and amount"));
+            return null;
+        }
+        if (!(material instanceof String key) || !key.matches("[a-z0-9_]{1,64}")) {
+            problems.add(new Problem(path + ".material", "format", "expected a lower-case material key"));
+            return null;
+        }
+        int count = 1;
+        if (amount != null) {
+            if (!(amount instanceof Integer value) || value < 1 || value > 2304) {
+                problems.add(new Problem(path + ".amount", "range", "expected a whole number from 1 to 2304"));
+                return null;
+            }
+            count = value;
+        }
+        return Map.of("material", key, "amount", Integer.toString(count));
+    }
+
     private String text(String path, Object raw) {
         if (!(raw instanceof String text) || text.isBlank() || text.length() > MAX_TEXT) {
             problems.add(new Problem(path, "type", "expected text of 1 to " + MAX_TEXT + " characters"));
@@ -274,6 +334,21 @@ public final class LogicParser {
             case "not" -> {
                 Condition child = condition(at, body, depth + 1);
                 return child != null ? new Condition.Not(child) : null;
+            }
+            case "has-money" -> {
+                String amount = money(at, body);
+                return amount != null ? new Condition.Fact("money", Map.of("amount", amount)) : null;
+            }
+            case "has-item" -> {
+                Map<String, String> item = item(at, body);
+                return item != null ? new Condition.Fact("item", item) : null;
+            }
+            case "has-permission" -> {
+                if (!(body instanceof String node) || !node.matches("[a-z0-9_.-]{1,128}")) {
+                    problems.add(new Problem(at, "format", "expected a permission node"));
+                    return null;
+                }
+                return new Condition.Fact("permission", Map.of("node", node));
             }
             case "chance" -> {
                 if (!(body instanceof Number number) || !(number.doubleValue() >= 0 && number.doubleValue() <= 1)) {

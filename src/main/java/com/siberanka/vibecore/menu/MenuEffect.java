@@ -2,6 +2,7 @@ package com.siberanka.vibecore.menu;
 
 import com.siberanka.vibecore.core.validation.Problem;
 import com.siberanka.vibecore.logic.Action;
+import com.siberanka.vibecore.logic.LogicParser;
 import com.siberanka.vibecore.project.Identifier;
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +18,10 @@ import java.util.Set;
  * emit: {type: open, menu: shop/page-2}
  * emit: {type: close}
  * emit: {type: refresh}
+ * emit: {type: money-take, amount: 10.5}        # needs an economy provider
+ * emit: {type: money-give, amount: 10}
+ * emit: {type: item-take, material: diamond, amount: 3}   # plain items only
+ * emit: {type: item-give, material: diamond, amount: 3}
  * </pre>
  */
 public final class MenuEffect {
@@ -26,7 +31,14 @@ public final class MenuEffect {
             "sound", Set.of("sound", "volume", "pitch"),
             "open", Set.of("menu"),
             "close", Set.of(),
-            "refresh", Set.of());
+            "refresh", Set.of(),
+            "money-take", Set.of("amount"),
+            "money-give", Set.of("amount"),
+            "item-take", Set.of("material", "amount"),
+            "item-give", Set.of("material", "amount"));
+
+    /** Effects performed together with the variable changes, all or none. */
+    public static final Set<String> TRANSACTIONAL = Set.of("money-take", "money-give", "item-take", "item-give");
 
     private MenuEffect() {
     }
@@ -56,7 +68,8 @@ public final class MenuEffect {
     private static void check(String path, Action.Emit emit, List<Problem> problems) {
         Set<String> allowed = ARGUMENTS.get(emit.type());
         if (allowed == null) {
-            problems.add(new Problem(path + ".type", "unknown-effect", "use message, sound, open, close or refresh"));
+            problems.add(new Problem(path + ".type", "unknown-effect", "use message, sound, open, close, refresh,"
+                    + " money-take, money-give, item-take or item-give"));
             return;
         }
         for (String name : emit.arguments().keySet()) {
@@ -78,6 +91,21 @@ public final class MenuEffect {
                 }
                 range(path + ".volume", arguments.get("volume"), 0, 4, problems);
                 range(path + ".pitch", arguments.get("pitch"), 0.5, 2, problems);
+            }
+            case "money-take", "money-give" -> {
+                if (LogicParser.parseMoney(arguments.get("amount")) == null) {
+                    problems.add(new Problem(path + ".amount", "range",
+                            "expected a positive amount with at most two decimals"));
+                }
+            }
+            case "item-take", "item-give" -> {
+                if (!arguments.getOrDefault("material", "").matches("[a-z0-9_]{1,64}")) {
+                    problems.add(new Problem(path + ".material", "format", "expected a lower-case material key"));
+                }
+                range(path + ".amount", arguments.getOrDefault("amount", "1"), 1, 2304, problems);
+                if (!arguments.getOrDefault("amount", "1").matches("[0-9]{1,4}")) {
+                    problems.add(new Problem(path + ".amount", "type", "expected a whole number"));
+                }
             }
             case "open" -> {
                 if (!Identifier.parse(path + ".menu", arguments.get("menu")).isAccepted()) {

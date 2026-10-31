@@ -55,3 +55,7 @@ menu:
   list-header: "<gray>Menüler: <white><count></white></gray>"
   list-entry: " <white><menu></white> <dark_gray>(<rows> satır)</dark_gray>"
   action-error: "<red>Bu işlem tamamlanamadı. Ayrıntılar sunucu günlüğünde.</red>"
+  not-enough-money: "<red><white><amount></white> daha paraya ihtiyacın var.</red>"
+  not-enough-items: "<red><white><amount> × <material></white> gerekli (yalnız düz eşyalar sayılır).</red>"
+  inventory-full: "<red>Envanterinde <white><material></white> için yer yok.</red>"
+  economy-missing: "<red>Bu sunucuda kullanılabilir bir ekonomi yok.</red>"

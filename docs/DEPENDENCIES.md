@@ -5,6 +5,7 @@
 | Dependency | Version | Scope | Distributed in JAR | License |
 | --- | --- | --- | --- | --- |
 | Paper API (`io.papermc.paper:paper-api`), including Adventure and MiniMessage | `1.21.4-R0.1-SNAPSHOT` | Provided by the server | No | Own licenses |
+| VaultAPI (`com.github.MilkBowl:VaultAPI`), optional economy bridge | `1.7.1` | Provided by the Vault plugin when installed | No | LGPL-3.0 |
 | JUnit Jupiter | `5.11.4` | Tests only | No | EPL-2.0 |
 
 The build uses Apache Maven plugins (Apache License 2.0); they are not part of the plugin JAR. The JAR bundles no third-party code or assets. See [NOTICE](../NOTICE).

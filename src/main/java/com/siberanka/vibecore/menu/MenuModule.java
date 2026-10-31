@@ -10,8 +10,10 @@ import com.siberanka.vibecore.core.validation.Problem;
 import com.siberanka.vibecore.core.validation.Result;
 import com.siberanka.vibecore.logic.Action;
 import com.siberanka.vibecore.logic.Condition;
+import com.siberanka.vibecore.logic.Facts;
 import com.siberanka.vibecore.logic.LogicEngine;
 import com.siberanka.vibecore.logic.Outcome;
+import com.siberanka.vibecore.logic.SideEffects;
 import com.siberanka.vibecore.project.Identifier;
 import com.siberanka.vibecore.variable.VariableContext;
 import com.siberanka.vibecore.variable.VariableStore;
@@ -69,6 +71,7 @@ public final class MenuModule implements VibeModule, Listener {
     private final BoundedWorkers workers;
     private final Messages messages;
     private final Path dataFile;
+    private final Path ledger;
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
     private final Map<UUID, MenuSession> sessions = new ConcurrentHashMap<>();
     private final Object saveLock = new Object();
@@ -86,6 +89,11 @@ public final class MenuModule implements VibeModule, Listener {
         this.workers = workers;
         this.messages = messages;
         this.dataFile = plugin.getDataFolder().toPath().resolve("data").resolve("variables.txt");
+        this.ledger = plugin.getDataFolder().toPath().resolve("data").resolve("transactions.log");
+    }
+
+    private PlayerWorld world(Player viewer) {
+        return new PlayerWorld(viewer, messages, plugin.getLogger(), ledger);
     }
 
     @Override
@@ -208,7 +216,7 @@ public final class MenuModule implements VibeModule, Listener {
         }
         if (menu.openCondition() != null) {
             Result<Boolean> allowed = engine.test(menu.openCondition(),
-                    VariableContext.player(viewer.getUniqueId()), LogicEngine.Limits.DEFAULT);
+                    VariableContext.player(viewer.getUniqueId()), LogicEngine.Limits.DEFAULT, world(viewer));
             if (!allowed.isAccepted()) {
                 logProblems("Open condition of " + id + " could not be evaluated", allowed.problems());
                 return Result.rejected(allowed.problems());
@@ -220,7 +228,8 @@ public final class MenuModule implements VibeModule, Listener {
         MenuSession session = new MenuSession(viewer.getUniqueId(), menu, render(menu.title(), viewer, null));
         VariableContext context = VariableContext.session(viewer.getUniqueId(), session.id());
         if (!menu.onOpen().isEmpty()) {
-            Outcome outcome = engine.run(menu.onOpen(), context, LogicEngine.Limits.DEFAULT);
+            PlayerWorld world = world(viewer);
+            Outcome outcome = engine.run(menu.onOpen(), context, LogicEngine.Limits.DEFAULT, world, world);
             if (!(outcome instanceof Outcome.Committed committed)) {
                 store.closeSession(session.id());
                 report(viewer, menu, outcome);
@@ -253,11 +262,11 @@ public final class MenuModule implements VibeModule, Listener {
         return miniMessage.deserialize(template, variables, Placeholder.unparsed("player", viewer.getName()));
     }
 
-    private boolean test(Condition condition, VariableContext context, MenuDefinition menu) {
+    private boolean test(Condition condition, VariableContext context, MenuDefinition menu, Player viewer) {
         if (condition == null) {
             return true;
         }
-        Result<Boolean> result = engine.test(condition, context, LogicEngine.Limits.DEFAULT);
+        Result<Boolean> result = engine.test(condition, context, LogicEngine.Limits.DEFAULT, world(viewer));
         if (!result.isAccepted()) {
             logProblems("Condition in " + menu.id() + " could not be evaluated", result.problems());
             return false;
@@ -270,12 +279,12 @@ public final class MenuModule implements VibeModule, Listener {
         MenuDefinition menu = session.menu();
         session.getInventory().clear();
         for (MenuItem item : menu.items()) {
-            if (!test(item.visible(), context, menu)) {
+            if (!test(item.visible(), context, menu, viewer)) {
                 continue;
             }
             ItemLook look = item.base();
             for (MenuItem.State state : item.states()) {
-                if (test(state.when(), context, menu)) {
+                if (test(state.when(), context, menu, viewer)) {
                     look = state.look().over(item.base());
                     break;
                 }
@@ -340,7 +349,7 @@ public final class MenuModule implements VibeModule, Listener {
             return;
         }
         VariableContext context = VariableContext.session(viewer.getUniqueId(), session.id());
-        if (!test(item.visible(), context, session.menu())
+        if (!test(item.visible(), context, session.menu(), viewer)
                 || !session.tryBeginClick(System.nanoTime(), DEBOUNCE_NANOS)) {
             return;
         }
@@ -350,7 +359,8 @@ public final class MenuModule implements VibeModule, Listener {
                 tasks.runLater(() -> closeIfCurrent(viewer, session), 1);
                 return;
             }
-            Outcome outcome = engine.run(item.actionsFor(channel), context, LogicEngine.Limits.DEFAULT);
+            PlayerWorld world = world(viewer);
+            Outcome outcome = engine.run(item.actionsFor(channel), context, LogicEngine.Limits.DEFAULT, world, world);
             if (outcome instanceof Outcome.Committed committed) {
                 perform(viewer, session, committed.effects(), true);
             } else {
@@ -383,7 +393,7 @@ public final class MenuModule implements VibeModule, Listener {
         UUID viewer = event.getPlayer().getUniqueId();
         MenuSession session = sessions.get(viewer);
         if (session != null) {
-            finish(session, null);
+            finish(session, event.getPlayer());
         }
         store.disconnect(viewer);
     }
@@ -397,7 +407,15 @@ public final class MenuModule implements VibeModule, Listener {
         List<Action> onClose = session.menu().onClose();
         if (!onClose.isEmpty()) {
             VariableContext context = VariableContext.session(session.viewer(), session.id());
-            Outcome outcome = engine.run(onClose, context, LogicEngine.Limits.DEFAULT);
+            Outcome outcome;
+            if (viewer != null) {
+                PlayerWorld world = world(viewer);
+                outcome = engine.run(onClose, context, LogicEngine.Limits.DEFAULT, world, world);
+            } else {
+                outcome = engine.run(onClose, context, LogicEngine.Limits.DEFAULT, Facts.NONE, effects ->
+                        TransactionPlan.of(effects).empty() ? SideEffects.NONE.perform(effects)
+                                : Result.rejected("on-close", "viewer-offline", "money and items need the viewer"));
+            }
             if (viewer != null && viewer.isOnline()) {
                 if (outcome instanceof Outcome.Committed committed) {
                     perform(viewer, session, committed.effects(), false);
