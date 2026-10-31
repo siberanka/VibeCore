@@ -1,6 +1,6 @@
 # VibeCore License
 
-Required Notice: Copyright (c) 2026 siberanka (https://gitlab.com/siberanka/vibecore)
+Required Notice: Copyright (c) 2026 siberanka (https://github.com/siberanka/VibeCore)
 
 VibeCore, which includes the Paper plugin and every file in this repository unless a file or the NOTICE file
 says otherwise, is licensed under the PolyForm Noncommercial License 1.0.0 (Part 2) together with the
@@ -11,7 +11,7 @@ differ, Part 1 applies.
 Part 2 is reproduced without change. This combined license is not the PolyForm Noncommercial License itself,
 and the PolyForm Project has neither written nor endorsed Part 1.
 
-Source: https://gitlab.com/siberanka/vibecore
+Source: https://github.com/siberanka/VibeCore and https://gitlab.com/siberanka/vibecore
 
 ## Part 1: Additional terms
 
@@ -44,7 +44,7 @@ every kind of work: software, plugins, forks, articles, posts, videos, courses a
 question sites. The credit must:
 
 - (a) name VibeCore and siberanka as the source;
-- (b) link to https://gitlab.com/siberanka/vibecore;
+- (b) link to https://github.com/siberanka/VibeCore or https://gitlab.com/siberanka/vibecore;
 - (c) say that the material was changed, if it was;
 - (d) in source code, stand in a comment next to the copied material and in the work's notices (README,
   NOTICE or credits); in other works, stand where readers of the material see it, such as the description,
@@ -53,7 +53,7 @@ question sites. The credit must:
 
 For example:
 
-> Adapted from VibeCore by siberanka (https://gitlab.com/siberanka/vibecore), VibeCore License.
+> Adapted from VibeCore by siberanka (https://github.com/siberanka/VibeCore), VibeCore License.
 
 The credit does not replace the notices Part 2 requires: whoever receives a copy of any part of VibeCore must
 also receive this license or a link to it, and the Required Notice line above. Material copied from VibeCore

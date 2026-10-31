@@ -59,7 +59,7 @@ The plugin JAR is written to `target/`.
 
 ## Development
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md), [the architecture](docs/ARCHITECTURE.md), [the roadmap](docs/ROADMAP.md) and [the acceptance plan](docs/ACCEPTANCE.md). Report problems in the [issue tracker](https://gitlab.com/siberanka/vibecore/-/issues) and security issues as described in [SECURITY.md](SECURITY.md).
+Read [CONTRIBUTING.md](CONTRIBUTING.md), [the architecture](docs/ARCHITECTURE.md), [the roadmap](docs/ROADMAP.md) and [the acceptance plan](docs/ACCEPTANCE.md). Report problems on [GitHub](https://github.com/siberanka/VibeCore/issues) or [GitLab](https://gitlab.com/siberanka/vibecore/-/issues) and security issues as described in [SECURITY.md](SECURITY.md).
 
 ## License
 
@@ -68,7 +68,7 @@ VibeCore is maintained by `siberanka` and licensed under the [VibeCore License](
 - You may build, install, change and run VibeCore on any server or network you run or administer, including servers and networks that earn money (store, ranks, subscriptions, donations, advertising).
 - You may study it and share copies and changed versions free of charge, with LICENSE and NOTICE.
 - You may not sell it: not VibeCore, a copy, a changed version, a fork or a renamed copy, not any part of its source code, not as part of a paid bundle or server setup, and not as a paid product or service whose value comes mainly from it.
-- If you copy, quote or adapt any part of VibeCore, even a single code block, credit it where readers see it: name VibeCore and siberanka, link to this repository and say whether you changed it, for example `Adapted from VibeCore by siberanka (https://gitlab.com/siberanka/vibecore), VibeCore License.`
+- If you copy, quote or adapt any part of VibeCore, even a single code block, credit it where readers see it: name VibeCore and siberanka, link to this repository and say whether you changed it, for example `Adapted from VibeCore by siberanka (https://github.com/siberanka/VibeCore), VibeCore License.`
 
 Anything beyond these terms needs a separate written license from siberanka. Third-party components keep their own licenses; see [NOTICE](NOTICE) and the [dependency policy](docs/DEPENDENCIES.md).
 
@@ -116,7 +116,7 @@ VibeCore'un bakımını `siberanka` yapar; [VibeCore License](LICENSE) ile, yani
 - VibeCore'u yönettiğiniz veya işlettiğiniz her sunucuda ve ağda derleyebilir, kurabilir, değiştirebilir ve çalıştırabilirsiniz; para kazanan sunucular ve ağlar (mağaza, rütbeler, abonelikler, bağışlar, reklam) da buna dahildir.
 - İnceleyebilir; kopyalarını ve değiştirilmiş sürümlerini LICENSE ve NOTICE ile birlikte ücretsiz paylaşabilirsiniz.
 - Satamazsınız: ne VibeCore'u ne bir kopyasını, değiştirilmiş bir sürümünü, bir fork'unu, adı değiştirilmiş bir kopyasını veya kaynak kodunun herhangi bir parçasını; ne ücretli bir paketin veya sunucu kurulumunun parçası olarak ne de değerini esas olarak ondan alan ücretli bir ürün veya hizmet olarak.
-- VibeCore'un herhangi bir parçasını, tek bir kod bloğu bile olsa, kopyalar, alıntılar veya uyarlarsanız okuyanların gördüğü yerde kaynak gösterin: VibeCore'u ve siberanka'yı adlandırın, bu depoya bağlantı verin ve değiştirip değiştirmediğinizi belirtin; örneğin `Adapted from VibeCore by siberanka (https://gitlab.com/siberanka/vibecore), VibeCore License.`
+- VibeCore'un herhangi bir parçasını, tek bir kod bloğu bile olsa, kopyalar, alıntılar veya uyarlarsanız okuyanların gördüğü yerde kaynak gösterin: VibeCore'u ve siberanka'yı adlandırın, bu depoya bağlantı verin ve değiştirip değiştirmediğinizi belirtin; örneğin `Adapted from VibeCore by siberanka (https://github.com/siberanka/VibeCore), VibeCore License.`
 
 Bu koşulların ötesindeki her şey siberanka'dan ayrı ve yazılı bir lisans gerektirir.
 

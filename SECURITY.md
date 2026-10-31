@@ -4,7 +4,7 @@ VibeCore is under active development and has no stable release yet. Development 
 
 ## Reporting a vulnerability
 
-Report suspected vulnerabilities privately to **siberanka** by opening a [confidential issue on GitLab](https://gitlab.com/siberanka/vibecore/-/issues/new?issue[confidential]=true). Do not post exploit details, credentials, player records or server backups in public issues.
+Report suspected vulnerabilities privately to **siberanka** through [GitHub private vulnerability reporting](https://github.com/siberanka/VibeCore/security/advisories/new) or a [confidential issue on GitLab](https://gitlab.com/siberanka/vibecore/-/issues/new?issue[confidential]=true). Do not post exploit details, credentials, player records or server backups in public issues.
 
 Include the affected version, exact Paper build and Java version, the relevant configuration with secrets removed, a minimal reproduction using dummy data and the observed security impact. Local evidence is sufficient; do not test against other operators' servers.
 

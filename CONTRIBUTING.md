@@ -1,6 +1,6 @@
 # Contributing
 
-Open an [issue](https://gitlab.com/siberanka/vibecore/-/issues) describing the player or operator need before beginning a substantial change. Include observable acceptance criteria and the affected module. VibeCore is under active development, so check the roadmap first.
+Open an issue on [GitHub](https://github.com/siberanka/VibeCore/issues) or [GitLab](https://gitlab.com/siberanka/vibecore/-/issues) describing the player or operator need before beginning a substantial change. Include observable acceptance criteria and the affected module. VibeCore is under active development, so check the roadmap first.
 
 Build and test with JDK 25 using `mvn verify`. Changes need appropriate checks and exact Paper/client version records for runtime behavior. Keep world and player operations on the server thread. Perform bounded file and media processing away from that thread, returning results through the scheduler.
 
